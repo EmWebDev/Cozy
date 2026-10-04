@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cozy Room 💌</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>💌</text></svg>">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fff3f8; --bg2:#f1ebff; --card:#ffffff; --ink:#4a2c42; --soft:#8c6a82;
+    --pink:#ff7fb0; --pink-soft:#ffe0ee; --lilac:#b9a4ff; --lilac-soft:#ece6ff;
+    --mint:#aeeed5; --sun:#ffe7a1; --line:#f6d3e3; --shadow:0 8px 24px rgba(255,127,176,.22);
+    --good:#ff5c9a;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#251827; --bg2:#1d1830; --card:#34233a; --ink:#ffeaf4; --soft:#d3b2c8;
+      --pink:#ff7fb0; --pink-soft:#4b2540; --lilac:#b9a4ff; --lilac-soft:#3a2f5c;
+      --mint:#3f8f78; --sun:#8c7330; --line:#53375b; --shadow:0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#251827; --bg2:#1d1830; --card:#34233a; --ink:#ffeaf4; --soft:#d3b2c8;
+    --pink:#ff7fb0; --pink-soft:#4b2540; --lilac:#b9a4ff; --lilac-soft:#3a2f5c;
+    --mint:#3f8f78; --sun:#8c7330; --line:#53375b; --shadow:0 8px 24px rgba(0,0,0,.35);
+  }
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0; min-height:100vh; color:var(--ink);
+    font-family:'Fredoka','Nunito','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:linear-gradient(160deg,var(--bg),var(--bg2)); background-attachment:fixed;
+  }
+  #app{max-width:520px;margin:0 auto;padding:18px 16px 40px}
+  .float{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+  .float span{position:absolute;bottom:-40px;font-size:22px;opacity:.35;animation:rise 14s linear infinite}
+  @keyframes rise{to{transform:translateY(-115vh) rotate(25deg)}}
+  #app{position:relative;z-index:1}
+
+  h1{font-size:34px;margin:6px 0 4px;text-align:center}
+  h2{font-size:22px;margin:0 0 10px}
+  .sub{text-align:center;color:var(--soft);margin:0 0 20px}
+  .card{background:var(--card);border-radius:26px;padding:20px;box-shadow:var(--shadow);margin-bottom:16px;animation:pop .35s ease both}
+  @keyframes pop{from{transform:translateY(8px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+  label{display:block;font-weight:600;margin:0 0 8px}
+  input[type=text]{
+    width:100%;font:inherit;font-size:18px;padding:14px 16px;border-radius:18px;
+    border:2.5px solid var(--line);background:var(--bg);color:var(--ink);outline:none;
+  }
+  input[type=text]:focus{border-color:var(--pink)}
+  .code-in{text-align:center;letter-spacing:.35em;font-weight:700;text-transform:uppercase}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  .gender{
+    border:2.5px solid var(--line);background:var(--bg);border-radius:20px;padding:12px 4px;
+    font:inherit;color:var(--ink);cursor:pointer;text-align:center;transition:.15s;
+  }
+  .gender .e{font-size:30px;display:block}
+  .gender.on{border-color:var(--pink);background:var(--pink-soft);transform:scale(1.05)}
+  .btn{
+    width:100%;font:inherit;font-weight:700;font-size:18px;border:0;border-radius:20px;padding:15px;
+    background:var(--pink);color:#fff;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.12);
+    transition:transform .1s, box-shadow .1s;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.12)}
+  .btn.alt{background:var(--lilac)}
+  .btn.ghost{background:transparent;color:var(--soft);box-shadow:none;border:2.5px solid var(--line);font-size:15px;padding:10px}
+  .btn:disabled{opacity:.5;cursor:default}
+  .err{background:#ffe1e1;color:#a22;border-radius:14px;padding:10px 12px;margin:10px 0 0;font-size:15px;text-align:center}
+  .or{text-align:center;color:var(--soft);margin:14px 0}
+  .note{background:var(--sun);border-radius:16px;padding:10px 14px;font-size:14px;margin-bottom:14px;color:#5a4300}
+  :root[data-theme="dark"] .note{color:#fff3c9}
+
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+  .codepill{
+    display:flex;align-items:center;gap:8px;background:var(--card);border-radius:999px;padding:8px 8px 8px 16px;
+    box-shadow:var(--shadow);font-weight:700;letter-spacing:.2em;cursor:pointer;border:0;color:var(--ink);font-family:inherit;font-size:17px
+  }
+  .codepill small{letter-spacing:0;font-weight:500;color:var(--soft);font-size:12px}
+  .codepill i{font-style:normal;background:var(--pink);color:#fff;border-radius:999px;padding:5px 11px;font-size:13px;letter-spacing:0}
+  .who{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+  .chip{
+    display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 10px;font-size:14px;font-weight:500;
+    background:var(--pink-soft);white-space:nowrap
+  }
+  .chip.s-boy{background:var(--lilac-soft)} .chip.s-other{background:var(--sun);color:#5a4300}
+  .chip.me{outline:2px solid var(--pink)}
+
+  .game{
+    display:flex;gap:14px;align-items:center;width:100%;text-align:left;font:inherit;color:var(--ink);
+    background:var(--card);border:0;border-radius:24px;padding:16px;margin-bottom:12px;cursor:pointer;
+    box-shadow:var(--shadow);transition:transform .12s;
+  }
+  .game:active{transform:scale(.98)}
+  .game .ge{font-size:36px;background:var(--pink-soft);border-radius:18px;width:62px;height:62px;display:grid;place-items:center;flex:none}
+  .game b{display:block;font-size:19px}
+  .game span.d{color:var(--soft);font-size:14px}
+  .game:disabled{opacity:.55;cursor:default}
+
+  .dots{display:flex;gap:5px;justify-content:center;margin-bottom:12px}
+  .dots i{height:8px;flex:1;max-width:36px;border-radius:9px;background:var(--line)}
+  .dots i.d{background:var(--pink)} .dots i.c{background:var(--lilac)}
+  .tag{display:inline-block;background:var(--lilac-soft);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;margin-bottom:10px}
+  .q{font-size:23px;font-weight:600;line-height:1.3;margin:0 0 16px}
+  .opt{
+    display:block;width:100%;text-align:left;font:inherit;font-size:17px;color:var(--ink);
+    background:var(--bg);border:2.5px solid var(--line);border-radius:18px;padding:13px 14px;margin-bottom:10px;cursor:pointer;transition:.12s
+  }
+  .opt .n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--pink-soft);font-weight:700;margin-right:8px;font-size:14px}
+  .opt.mine{border-color:var(--pink);background:var(--pink-soft)}
+  .opt.locked{cursor:default}
+  .opt .pk{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+  .status{text-align:center;color:var(--soft);padding:6px 0 12px;font-size:15px}
+  .match{
+    text-align:center;font-size:22px;font-weight:700;color:var(--good);background:var(--pink-soft);
+    border-radius:20px;padding:12px;margin-bottom:12px;animation:beat .9s ease 2
+  }
+  .nomatch{text-align:center;color:var(--soft);padding:8px 0 12px}
+  @keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  .guessline{background:var(--bg);border-radius:16px;padding:12px 14px;margin-bottom:10px;font-size:16px;line-height:1.5}
+  .guessline.ok{background:var(--pink-soft)}
+  .hearts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px 0;font-size:26px}
+  .big{font-size:56px;text-align:center;margin:4px 0}
+  .center{text-align:center}
+  .spin{display:inline-block;animation:bob 1.2s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-6px)}}
+  .foot{display:flex;gap:10px;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="float" aria-hidden="true"></div>
+<div id="app"></div>
+
+<script>
+/* ---------- content ---------- */
+const GAMES = [
+  { id:'flags', emoji:'🚩', title:'What are my red flags?', desc:'Answers stay secret until you both answer!', mode:'hidden', qs:[
+    {q:'If you get angry, how do you react?', o:['Try to calm down','Scream','Break stuff','Ignore everything']},
+    {q:'You\'re running late for a date. What do you do?', o:['Text them right away','Pretend nothing happened','Blame the traffic','Just don\'t show up']},
+    {q:'Your partner has a night out with friends.', o:['"Have fun!"','Text every 10 minutes','Demand their location','Sulk all night']},
+    {q:'How do you handle texting?', o:['Reply fast','Wait hours on purpose','Leave them on read','Call instead']},
+    {q:'You\'re in an argument. You…', o:['Talk it out calmly','Give the silent treatment','Bring up old mistakes','Walk out']},
+    {q:'Your ex texts you.', o:['Tell my partner','Reply in secret','Screenshot & keep it','Check their profile 👀']},
+    {q:'Your partner gets a big promotion!', o:['Celebrate loudly','Feel jealous quietly','Downplay it','Make it about me']},
+    {q:'Splitting the bill on a date?', o:['Split it fairly','Expect them to pay','Keep a score','Hide my spending']}
+  ]},
+  { id:'stranger', emoji:'🕵️', title:'Get to know the stranger', desc:'Easy questions to break the ice', mode:'instant', qs:[
+    {q:'Pick your perfect morning:', o:['Sleep in till noon','Early run & coffee','Cozy breakfast in bed','Already at work']},
+    {q:'Your dream trip is…', o:['Tropical beach','Snowy cabin','Big city lights','Road trip adventure']},
+    {q:'Pick a comfort food:', o:['Pizza','Pasta','Ice cream','Soup']},
+    {q:'Best way to spend a Friday night?', o:['Party with friends','Movie marathon','Cooking together','Gaming']},
+    {q:'You\'re most likely to…', o:['Be early to everything','Be late to everything','Forget birthdays','Plan every detail']},
+    {q:'Pick a pet:', o:['Dog 🐶','Cat 🐱','Bunny 🐰','No pets, thanks']},
+    {q:'Your love language is…', o:['Words','Quality time','Gifts','Touch']},
+    {q:'Pick a superpower:', o:['Fly','Read minds','Be invisible','Freeze time']}
+  ]},
+  { id:'speed', emoji:'⚡', title:'Speed dating', desc:'Quick this-or-that, go with your gut!', mode:'instant', qs:[
+    {q:'Coffee or tea?', o:['Coffee ☕','Tea 🍵']},
+    {q:'Beach or mountains?', o:['Beach 🏖️','Mountains 🏔️']},
+    {q:'Text or call?', o:['Text 💬','Call 📞']},
+    {q:'Sweet or salty?', o:['Sweet 🍰','Salty 🍟']},
+    {q:'Night owl or early bird?', o:['Night owl 🦉','Early bird 🐦']},
+    {q:'Dinner out or cook at home?', o:['Dinner out 🍽️','Cook at home 🍳']},
+    {q:'Planner or spontaneous?', o:['Planner 📅','Spontaneous 🎲']},
+    {q:'Cuddles or space?', o:['Cuddles 🧸','Space 🌿']},
+    {q:'Summer or winter?', o:['Summer ☀️','Winter ❄️']},
+    {q:'Movies or series?', o:['Movies 🎬','Series 📺']}
+  ]},
+  { id:'know', emoji:'🧠', title:'Do you know me?', desc:'Answer for you, then guess your friend\'s answer', mode:'guess', qs:[
+    {q:'What\'s my go-to comfort food?', o:['Pizza','Sweets','Pasta','Fast food']},
+    {q:'How do I spend a free Sunday?', o:['Sleeping','Going outside','Watching shows','Seeing friends']},
+    {q:'What annoys me the most?', o:['Being late','Loud chewing','Slow walkers','Messy rooms']},
+    {q:'My dream vacation is…', o:['Beach','City','Nature','Somewhere new each time']},
+    {q:'What\'s my biggest fear?', o:['Heights','Spiders','Being alone','Failing']},
+    {q:'How do I show I care?', o:['Cooking for you','Gifts','Listening','Hugs']},
+    {q:'What music do I play most?', o:['Pop','Rap','Rock / indie','Chill / lo-fi']},
+    {q:'I\'m happiest when…', o:['It\'s sunny','I\'m with my people','I\'m snacking','I\'m creating']}
+  ]},
+  { id:'wyr', emoji:'🎈', title:'Would you rather', desc:'Silly choices, see who matches', mode:'instant', qs:[
+    {q:'Would you rather…', o:['Always be 10 min late','Always be 20 min early']},
+    {q:'Would you rather…', o:['Only eat sweet','Only eat salty']},
+    {q:'Would you rather…', o:['Live by the sea','Live in the mountains']},
+    {q:'Would you rather…', o:['Talk to animals','Speak every language']},
+    {q:'Would you rather…', o:['Travel to the past','Travel to the future']},
+    {q:'Would you rather…', o:['Win the lottery','Find true love']},
+    {q:'Would you rather…', o:['Never use social media','Never watch a movie again']},
+    {q:'Would you rather…', o:['Tiny house, big love','Mansion, quiet life']}
+  ]}
+];
+const GAME = id => GAMES.find(g => g.id === id);
+const AV = {girl:'🐰', boy:'🐻', other:'🦊'};
+const GL = {girl:'Girl 🌸', boy:'Boy 🍀', other:'Other 🌈'};
+const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+/* ---------- helpers ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const root = document.getElementById('app');
+let S = { screen:'welcome', name:'', gender:'girl', joinCode:'', err:'', busy:false,
+          rt:null, rtChecked:false, room:null, isHost:false, code:'', last:'', copied:false, handledWant:0 };
+
+// decorative floating hearts
+(function(){
+  const f = document.querySelector('.float'); const em = ['💗','✨','🌸','💞','🫧','🎀'];
+  for (let i=0;i<10;i++){ const s=document.createElement('span'); s.textContent=em[i%em.length];
+    s.style.left=(i*10+Math.random()*6)+'%'; s.style.animationDelay=(-Math.random()*14)+'s';
+    s.style.animationDuration=(10+Math.random()*10)+'s'; f.appendChild(s); }
+})();
+
+function players(){
+  if (!S.room) return [];
+  const ps = S.room.peers().filter(p => p.kind === 'viewer' && p.presence && typeof p.presence.n === 'string' && p.presence.n);
+  ps.sort((a,b) =>
+    ((b.presence.r==='h')-(a.presence.r==='h')) ||
+    ((a.presence.jt||0)-(b.presence.jt||0)) || a.peer.localeCompare(b.peer));
+  return ps;
+}
+const pname = p => String(p.presence.n).slice(0,14);
+const pskin = p => AV[p.presence.s] ? p.presence.s : 'other';
+const pchip = (p, you) => `<span class="chip s-${pskin(p)} ${p.isMe?'me':''}">${AV[pskin(p)]} ${p.isMe && you ? 'You' : esc(pname(p))}</span>`;
+
+function ans(p, key, q, gid){
+  if (p.presence.ag !== gid) return undefined;
+  const o = p.presence[key]; if (!o || typeof o !== 'object') return undefined;
+  const v = o[q]; return (Number.isInteger(v) && v >= 0 && v < 4) ? v : undefined;
+}
+const setP = patch => { if (S.room) S.room.presence(patch).catch(()=>{}); };
+const newGid = () => Math.random().toString(36).slice(2,8);
+
+/* ---------- views ---------- */
+function welcomeView(){
+  return `
+  <h1>Cozy Room 💌</h1>
+  <p class="sub">Cute little games to play together</p>
+  <div class="card">
+    <label for="name">What's your name?</label>
+    <input type="text" id="name" maxlength="14" placeholder="Your name" value="${esc(S.name)}" autocomplete="off">
+    <label style="margin-top:18px">I am a…</label>
+    <div class="row">
+      ${['girl','boy','other'].map(g => `<button class="gender ${S.gender===g?'on':''}" data-act="gender" data-v="${g}"><span class="e">${AV[g]}</span>${GL[g].split(' ')[0]}</button>`).join('')}
+    </div>
+    ${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}
+  </div>
+  <button class="btn" data-act="start">Let's go ✨</button>`;
+}
+
+function lobbyView(){
+  const unavailable = S.rtChecked && !S.rt;
+  return `
+  <h1>Hi ${AV[S.gender]} ${esc(S.name)}!</h1>
+  <p class="sub">Make a room or hop into a friend's</p>
+  ${unavailable ? `<div class="note">Couldn't load the connection library. Check your internet and refresh the page.</div>` : ''}
+  <div class="card">
+    <h2>🏠 Create a room</h2>
+    <p style="color:var(--soft);margin:0 0 14px">You'll get a code to send to your friends.</p>
+    <button class="btn" data-act="create" ${(S.busy||!S.rt)?'disabled':''}>${S.busy?'Making your room…':'Create room'}</button>
+  </div>
+  <div class="or">— or —</div>
+  <div class="card">
+    <h2>🚪 Join a room</h2>
+    <input type="text" id="code" class="code-in" maxlength="5" placeholder="CODE" value="${esc(S.joinCode)}" autocomplete="off" autocapitalize="characters">
+    <div style="height:12px"></div>
+    <button class="btn alt" data-act="join" ${(S.busy||!S.rt)?'disabled':''}>Join room</button>
+    ${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}
+  </div>
+  <button class="btn ghost" data-act="back">← Change my name</button>`;
+}
+
+function header(P){
+  return `<div class="top">
+    <button class="codepill" data-act="copy" title="Copy code"><span><small>Room code</small><br>${esc(S.code)}</span><i>${S.copied?'Copied!':'Copy'}</i></button>
+    <div class="who">${P.map(p => pchip(p,true)).join('')}</div>
+  </div>`;
+}
+
+function roomView(){
+  const P = players();
+  const me = P.find(p => p.isMe && p.sameTab);
+  const host = P.find(p => p.presence.r === 'h');
+  let body;
+  if (!me){
+    body = `<div class="card center"><div class="big spin">💫</div><p>Getting your room ready…</p></div>`;
+  } else if (!host){
+    body = `<div class="card center"><div class="big">🥺</div><h2>The host left</h2><p style="color:var(--soft)">This room has ended.</p><button class="btn" data-act="leave">Back to start</button></div>`;
+  } else {
+    const gm = GAME(host.presence.gm);
+    body = gm ? gameView(P, me, host, gm) : menuView(P, me, host);
+  }
+  return header(P) + body + `<button class="btn ghost" data-act="leave" style="margin-top:8px">Leave room</button>`;
+}
+
+function menuView(P, me, host){
+  const alone = P.length < 2;
+  const hostName = host.isMe ? 'you' : esc(pname(host));
+  return `
+  ${alone ? `<div class="card center"><div class="big spin">💌</div><h2>Waiting for friends…</h2>
+    <p style="color:var(--soft);margin:0">Send them the code <b>${esc(S.code)}</b> and have them tap “Join room”.</p></div>` : ''}
+  <h2 style="margin:6px 4px 12px">${alone ? 'Games' : 'Pick a game 🎮'}</h2>
+  ${GAMES.map(g => `<button class="game" data-act="game" data-v="${g.id}" ${alone?'disabled':''}>
+      <div class="ge">${g.emoji}</div><div><b>${g.title}</b><span class="d">${g.desc}</span></div></button>`).join('')}
+  ${(!alone && !S.isHost) ? `<p class="status">Tap a game and ${hostName} will start it ✨</p>` : ''}`;
+}
+
+function gameView(P, me, host, gm){
+  const gid = host.presence.gid;
+  const q = Number.isInteger(host.presence.q) ? host.presence.q : 0;
+  const len = gm.qs.length;
+  if (me.presence.ag !== gid) return `<div class="card center"><div class="big spin">🎲</div><p>Starting ${esc(gm.title)}…</p></div>`;
+  if (q >= len) return resultsView(P, me, host, gm, gid);
+
+  const Q = gm.qs[q];
+  const guess = gm.mode === 'guess';
+  const done = p => ans(p,'a',q,gid) !== undefined && (!guess || ans(p,'g',q,gid) !== undefined);
+  const all = P.length > 0 && P.every(done);
+  const pending = P.filter(p => !done(p));
+  const myA = ans(me,'a',q,gid), myG = ans(me,'g',q,gid);
+  const phase = myA === undefined ? 'a' : (guess && myG === undefined ? 'g' : null);
+  const idx = P.indexOf(me);
+  const target = P[(idx+1) % P.length];
+
+  const dots = `<div class="dots">${gm.qs.map((_,i)=>`<i class="${i<q?'d':(i===q?'c':'')}"></i>`).join('')}</div>`;
+  const head = `${dots}<div class="card"><span class="tag">${gm.emoji} ${esc(gm.title)} · ${q+1}/${len}</span>`;
+
+  /* ---- guess mode ---- */
+  if (guess){
+    let inner;
+    if (all){
+      inner = P.map((p,i) => {
+        const t = P[(i+1)%P.length];
+        const g = ans(p,'g',q,gid), real = ans(t,'a',q,gid);
+        const ok = g === real;
+        return `<div class="guessline ${ok?'ok':''}">${pchip(p,true)} guessed ${t.isMe?'<b>your</b>':pchip(t,false)+'’s'} answer: <b>${esc(Q.o[g])}</b><br>
+          Real answer: <b>${esc(Q.o[real])}</b> ${ok ? '— <b style="color:var(--good)">Matching ♥</b>' : '— nope 🙈'}</div>`;
+      }).join('');
+    } else {
+      const promptTxt = phase === 'a' ? 'Answer for YOU 💭' : phase === 'g' ? `Now guess ${esc(pname(target))}'s answer 🔮` : '';
+      inner = phase ? `<p style="color:var(--soft);margin:-6px 0 12px;font-weight:600">${promptTxt}</p>` +
+        Q.o.map((o,i) => `<button class="opt" data-act="pick" data-i="${i}"><span class="n">${i+1}</span>${esc(o)}</button>`).join('')
+        : `<div class="status">Locked in ✨ Waiting for ${pending.map(p=>esc(pname(p))).join(', ')}…<br>Everything is revealed together!</div>`;
+    }
+    return head + `<p class="q">${esc(Q.q)}</p>${inner}</div>` + nextBtn(me, q, len, all);
+  }
+
+  /* ---- hidden + instant modes ---- */
+  const hidden = gm.mode === 'hidden';
+  const showOthers = hidden ? all : (myA !== undefined);
+  const opts = Q.o.map((o,i) => {
+    const pickers = P.filter(p => {
+      const a = ans(p,'a',q,gid);
+      if (a !== i) return false;
+      if (p.isMe) return true;
+      return showOthers;
+    });
+    const mine = myA === i;
+    return `<button class="opt ${mine?'mine':''} ${myA!==undefined?'locked':''}" data-act="pick" data-i="${i}">
+      <span class="n">${i+1}</span>${esc(o)}
+      ${pickers.length ? `<div class="pk">${pickers.map(p=>pchip(p,true)).join('')}</div>` : ''}</button>`;
+  }).join('');
+
+  let banner = '';
+  if (all){
+    const vals = P.map(p => ans(p,'a',q,gid));
+    const same = vals.every(v => v === vals[0]) && P.length > 1;
+    if (hidden) banner = same ? `<div class="match">Same flag! 🚩🚩</div>` : `<div class="nomatch">Different flags… interesting 👀</div>`;
+    else banner = same ? `<div class="match">Matching ♥</div>` : `<div class="nomatch">Not this time 🙈</div>`;
+  } else if (myA !== undefined){
+    banner = `<div class="status">${hidden ? 'Locked in 🔒 Answers stay secret until everyone’s in.<br>' : ''}Waiting for ${pending.map(p=>esc(pname(p))).join(', ')}…</div>`;
+  } else {
+    banner = `<div class="status">${hidden ? 'Your answer stays secret until everyone answers 🤫' : 'Pick one!'}</div>`;
+  }
+  return head + `<p class="q">${esc(Q.q)}</p>${opts}${banner}</div>` + nextBtn(me, q, len, all);
+}
+
+function nextBtn(me, q, len, all){
+  if (!all) return '';
+  const ready = Number.isInteger(me.presence.rd) && me.presence.rd >= q+1;
+  return `<button class="btn" data-act="next" ${ready?'disabled':''}>${ready ? 'Waiting for the others 💭' : (q+1>=len ? 'See results ✨' : 'Next question →')}</button>`;
+}
+
+function resultsView(P, me, host, gm, gid){
+  const len = gm.qs.length;
+  let inner = '';
+  if (gm.mode === 'guess'){
+    inner = P.map((p,i) => {
+      const t = P[(i+1)%P.length]; let c = 0;
+      for (let k=0;k<len;k++){ const g=ans(p,'g',k,gid), r=ans(t,'a',k,gid); if (g!==undefined && g===r) c++; }
+      return `<div class="guessline ${c>=len/2?'ok':''}">${pchip(p,true)} knew ${t.isMe?'<b>you</b>':pchip(t,false)} on <b>${c}/${len}</b> ${c>=len/2?'♥':'🙈'}</div>`;
+    }).join('');
+  } else {
+    let m = 0; const row = [];
+    for (let k=0;k<len;k++){
+      const vals = P.map(p => ans(p,'a',k,gid));
+      const same = P.length>1 && vals.every(v => v!==undefined && v===vals[0]);
+      if (same) m++; row.push(same ? '💗' : '🤍');
+    }
+    const label = gm.mode==='hidden' ? 'same flags' : 'matches';
+    const msg = m >= len*0.7 ? 'Wow, you two are in sync! 🥰' : m >= len*0.4 ? 'Cute! You vibe in lots of ways ✨' : 'Opposites attract, right? 😄';
+    inner = `<div class="big">${m>=len*0.5?'🥰':'😊'}</div><h2 class="center">${m}/${len} ${label}</h2><div class="hearts">${row.join('')}</div><p class="center" style="color:var(--soft)">${msg}</p>`;
+  }
+  const foot = S.isHost
+    ? `<button class="btn" data-act="menu">Pick another game 🎮</button>`
+    : `<p class="status">${esc(pname(host))} can pick the next game 🎮</p>`;
+  return `<div class="card"><span class="tag">${gm.emoji} ${esc(gm.title)}</span>${inner}</div>${foot}`;
+}
+
+/* ---------- render ---------- */
+function view(){
+  if (S.screen === 'welcome') return welcomeView();
+  if (S.screen === 'lobby') return lobbyView();
+  return roomView();
+}
+function render(){
+  const html = view();
+  if (html !== S.last){ root.innerHTML = html; S.last = html; }
+}
+
+/* ---------- game logic (runs on every room change) ---------- */
+function logic(){
+  if (!S.room) return;
+  const P = players();
+  const me = P.find(p => p.isMe && p.sameTab);
+  const host = P.find(p => p.presence.r === 'h');
+  if (!me || !host) return;
+  const hp = host.presence;
+  const gm = GAME(hp.gm);
+
+  if (S.isHost){
+    if (!gm){
+      const asker = P.find(p => !p.isMe && p.presence.w && GAME(p.presence.w.id) && Number(p.presence.w.t) > S.handledWant);
+      if (asker && P.length > 1){ S.handledWant = Number(asker.presence.w.t); startGame(asker.presence.w.id); }
+    } else if (Number.isInteger(hp.q) && hp.q < gm.qs.length){
+      const q = hp.q;
+      const allReady = P.every(p => p.presence.ag === hp.gid && Number.isInteger(p.presence.rd) && p.presence.rd >= q+1);
+      if (allReady) setP({ q: q+1 });
+    }
+  } else {
+    if (gm && me.presence.ag !== hp.gid) setP({ ag: hp.gid, a:{}, g:{}, rd:0, w:null });
+    else if (gm && me.presence.w) setP({ w:null });
+  }
+}
+function startGame(id){
+  const gid = newGid();
+  setP({ gm:id, q:0, gid, ag:gid, a:{}, g:{}, rd:0 });
+}
+function update(){ render(); logic(); }
+
+/* ---------- actions ---------- */
+async function enterRoom(code, host){
+  const room = host ? await S.rt.host(code) : await S.rt.guest(code);
+  S.room = room; S.isHost = host; S.code = code;
+  room.onPeers(() => update());
+  await room.presence({ n:S.name.trim().slice(0,14), s:S.gender, r:host?'h':'g', jt:Date.now(), a:{}, g:{}, rd:0, ag:null });
+  S.screen = 'room';
+}
+async function act(name, d){
+  if (name === 'gender'){ S.gender = d.v; return update(); }
+  if (name === 'start'){
+    if (!S.name.trim()){ S.err = 'Please type your name first 💕'; return update(); }
+    S.err = ''; S.screen = 'lobby'; return update();
+  }
+  if (name === 'back'){ S.screen = 'welcome'; S.err = ''; return update(); }
+  if (name === 'create'){
+    S.busy = true; S.err = ''; update();
+    try {
+      let made = false, tries = 0;
+      while (!made && tries++ < 6){
+        let code = ''; for (let i=0;i<5;i++) code += ALPHA[Math.floor(Math.random()*ALPHA.length)];
+        try { await enterRoom(code, true); made = true; }
+        catch(e){ if (!(e && e.message === 'taken')) throw e; }
+      }
+      if (!made) throw new Error('fail');
+    } catch(e){ S.err = 'Could not create the room. Try again!'; S.room = null; }
+    S.busy = false; return update();
+  }
+  if (name === 'join'){
+    const code = S.joinCode.trim().toUpperCase();
+    if (code.length !== 5){ S.err = 'Codes have 5 characters 🔑'; return update(); }
+    S.busy = true; S.err = ''; update();
+    try {
+      await enterRoom(code, false);
+      let found = false;
+      for (let i=0;i<14 && !found;i++){
+        found = players().some(p => !p.isMe && p.presence.r === 'h');
+        if (!found) await new Promise(r => setTimeout(r, 300));
+      }
+      if (!found){
+        const r = S.room; S.room = null; S.screen = 'lobby'; try { await r.leave(); } catch(e){}
+        S.err = 'Hmm, no room with that code. Check it and try again 🔍';
+      }
+    } catch(e){ S.err = (e && e.message === 'notfound') ? 'Hmm, no room with that code. Check it and try again 🔍' : 'Could not join. Try again!'; S.room = null; S.screen = 'lobby'; }
+    S.busy = false; return update();
+  }
+  if (name === 'copy'){
+    try { await navigator.clipboard.writeText(S.code); S.copied = true; } catch(e){ S.copied = true; }
+    update(); setTimeout(() => { S.copied = false; update(); }, 1800); return;
+  }
+  if (name === 'leave'){
+    const r = S.room; S.room = null; S.screen = 'lobby'; S.isHost = false; S.code = ''; S.err = '';
+    if (r) { try { await r.leave(); } catch(e){} }
+    return update();
+  }
+  if (name === 'game'){
+    if (S.isHost) startGame(d.v); else setP({ w:{ id:d.v, t:Date.now() } });
+    return;
+  }
+  if (name === 'menu'){ setP({ gm:null, q:null, gid:null }); return; }
+  if (name === 'next'){
+    const P = players(); const me = P.find(p=>p.isMe&&p.sameTab); const host = P.find(p=>p.presence.r==='h');
+    if (me && host && Number.isInteger(host.presence.q)) setP({ rd: host.presence.q + 1 });
+    return;
+  }
+  if (name === 'pick'){
+    const P = players(); const me = P.find(p=>p.isMe&&p.sameTab); const host = P.find(p=>p.presence.r==='h');
+    if (!me || !host) return;
+    const gm = GAME(host.presence.gm); if (!gm) return;
+    const gid = host.presence.gid, q = host.presence.q, i = Number(d.i);
+    if (me.presence.ag !== gid || !Number.isInteger(q) || q >= gm.qs.length) return;
+    const myA = ans(me,'a',q,gid), myG = ans(me,'g',q,gid);
+    if (myA === undefined){
+      setP({ a: Object.assign({}, me.presence.a || {}, { [q]: i }) });
+    } else if (gm.mode === 'guess' && myG === undefined){
+      setP({ g: Object.assign({}, me.presence.g || {}, { [q]: i }) });
+    }
+  }
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]');
+  if (!t || t.disabled) return;
+  act(t.dataset.act, t.dataset);
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'name') S.name = e.target.value;
+  if (e.target.id === 'code'){
+    S.joinCode = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5);
+    e.target.value = S.joinCode;
+  }
+});
+
+/* ---------- network (PeerJS: host is the hub, everyone else connects to the host) ---------- */
+function makeNet(){
+  if (!window.Peer) return null;
+  const PREFIX = 'cozyroom-lv-';
+  const applyPatch = (obj, patch) => { for (const k in patch){ if (patch[k] === null) delete obj[k]; else obj[k] = patch[k]; } };
+
+  function create(isHost, code){
+    return new Promise((resolve, reject) => {
+      const handlers = new Set();
+      let list = [], myId = isHost ? 'host' : null, mine = {}, conn = null, peer = null, settled = false;
+      const conns = new Map(), pres = new Map();   // host only
+      const fire = () => handlers.forEach(h => { try { h({}); } catch(e){} });
+      const entry = (id, presence) => ({ peer:id, by:null, isMe:id===myId, sameTab:id===myId, kind:'viewer', guest:false, presence, updatedAt:0 });
+      const finish = (ok, val) => { if (settled) return; settled = true; ok ? resolve(val) : reject(val); };
+
+      function broadcast(){
+        const l = [...pres].map(([id,p]) => ({ id, p }));
+        conns.forEach(c => { if (c.open) { try { c.send({ t:'s', l }); } catch(e){} } });
+        fire();
+      }
+
+      const room = {
+        peers(){
+          if (isHost) return [...pres].map(([id,p]) => entry(id, p));
+          const out = list.filter(x => x && x.id !== myId).map(x => entry(String(x.id), x.p || {}));
+          if (myId) out.push(entry(myId, Object.assign({}, mine)));
+          return out;
+        },
+        onPeers(fn){ handlers.add(fn); return () => handlers.delete(fn); },
+        presence(patch){
+          applyPatch(mine, patch);
+          if (isHost){ pres.set('host', Object.assign({}, mine)); broadcast(); }
+          else { if (conn && conn.open) conn.send({ t:'p', patch }); fire(); }
+          return Promise.resolve();
+        },
+        leave(){ closedByMe = true; try { peer && peer.destroy(); } catch(e){} handlers.clear(); return Promise.resolve(); }
+      };
+      let closedByMe = false;
+      const id = PREFIX + code.toLowerCase();
+
+      if (isHost){
+        peer = new Peer(id);
+        peer.on('open', () => { pres.set('host', mine); finish(true, room); });
+        peer.on('error', e => { if (e.type === 'unavailable-id') finish(false, new Error('taken')); else finish(false, e); });
+        peer.on('connection', c => {
+          conns.set(c.peer, c);
+          c.on('data', m => {
+            if (!m || m.t !== 'p' || !m.patch || typeof m.patch !== 'object') return;
+            if (JSON.stringify(m.patch).length > 4000) return;
+            const cur = Object.assign({}, pres.get(c.peer) || {});
+            applyPatch(cur, m.patch);
+            cur.r = 'g';                       // only the creator can be host
+            pres.set(c.peer, cur);
+            broadcast();
+          });
+          c.on('close', () => { conns.delete(c.peer); pres.delete(c.peer); broadcast(); });
+          c.on('error', () => {});
+        });
+      } else {
+        peer = new Peer();
+        peer.on('open', pid => {
+          myId = pid;
+          conn = peer.connect(id, { reliable:true });
+          conn.on('open', () => { conn.send({ t:'p', patch:mine }); finish(true, room); });
+          conn.on('data', m => { if (m && m.t === 's' && Array.isArray(m.l)){ list = m.l; fire(); } });
+          conn.on('close', () => { list = []; fire(); });
+          conn.on('error', () => {});
+        });
+        peer.on('error', e => { if (e.type === 'peer-unavailable') finish(false, new Error('notfound')); else finish(false, e); });
+        setTimeout(() => { if (!settled){ try { peer.destroy(); } catch(e){} finish(false, new Error('notfound')); } }, 12000);
+      }
+    });
+  }
+  return { host: code => create(true, code), guest: code => create(false, code) };
+}
+
+/* ---------- boot ---------- */
+render();
+S.rt = makeNet();
+S.rtChecked = true;
+update();
+</script>
+</body>
+</html>
