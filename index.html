@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cozy Room 💌</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>💌</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%92%8C%3C/text%3E%3C/svg%3E">
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -103,9 +103,19 @@
   .game span.d{color:var(--soft);font-size:14px}
   .game:disabled{opacity:.55;cursor:default}
 
-  .dots{display:flex;gap:5px;justify-content:center;margin-bottom:12px}
-  .dots i{height:8px;flex:1;max-width:36px;border-radius:9px;background:var(--line)}
-  .dots i.d{background:var(--pink)} .dots i.c{background:var(--lilac)}
+  .count{
+    display:flex;align-items:center;gap:14px;width:100%;text-align:left;font:inherit;color:var(--ink);
+    background:var(--bg);border:2.5px solid var(--line);border-radius:20px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:.12s
+  }
+  .count:active{transform:scale(.98);border-color:var(--pink)}
+  .count b{font-size:26px;min-width:56px;text-align:center;background:var(--pink-soft);border-radius:14px;padding:4px 0}
+  .count span{color:var(--soft);font-size:15px}
+
+  .bar{height:10px;border-radius:9px;background:var(--line);overflow:hidden;margin-bottom:14px}
+  .bar i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,var(--pink),var(--lilac));transition:width .3s}
+  .bar.sm{height:7px;margin:0;flex:1}
+  .prog{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px}
+  .prog span{color:var(--soft);min-width:52px;text-align:right}
   .tag{display:inline-block;background:var(--lilac-soft);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;margin-bottom:10px}
   .q{font-size:23px;font-weight:600;line-height:1.3;margin:0 0 16px}
   .opt{
@@ -113,6 +123,7 @@
     background:var(--bg);border:2.5px solid var(--line);border-radius:18px;padding:13px 14px;margin-bottom:10px;cursor:pointer;transition:.12s
   }
   .opt .n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--pink-soft);font-weight:700;margin-right:8px;font-size:14px}
+  .opt:active{border-color:var(--pink)}
   .opt.mine{border-color:var(--pink);background:var(--pink-soft)}
   .opt.locked{cursor:default}
   .opt .pk{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
@@ -130,7 +141,14 @@
   .center{text-align:center}
   .spin{display:inline-block;animation:bob 1.2s ease-in-out infinite}
   @keyframes bob{50%{transform:translateY(-6px)}}
-  .foot{display:flex;gap:10px;margin-top:6px}
+  .seg{display:flex;gap:8px;margin:12px 0}
+  .seg button{flex:1;font:inherit;font-weight:600;border:2.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:16px;padding:9px;cursor:pointer}
+  .seg button.on{border-color:var(--pink);background:var(--pink-soft)}
+  .rv{background:var(--card);border-radius:20px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .rv.same{outline:2.5px solid var(--pink)}
+  .rq{font-weight:600;margin-bottom:8px;line-height:1.35}
+  .rq .rn{display:inline-block;background:var(--lilac-soft);border-radius:999px;padding:1px 9px;font-size:13px;margin-right:6px}
+  .ra{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:5px 0;font-size:16px}
 </style>
 </head>
 <body>
@@ -138,71 +156,568 @@
 <div id="app"></div>
 
 <script>
-/* ---------- content ---------- */
+/* ---------- question pools (format: question|option|option|...) ---------- */
+const RAW = {};
+RAW.flags = `
+If you get angry, how do you react?|Try to calm down|Scream|Break stuff|Ignore everything
+You are running late for a date. You...|Text right away|Pretend nothing happened|Blame the traffic|Just do not show up
+Your partner has a night out with friends.|Say "have fun!"|Text every 10 minutes|Demand their location|Sulk all night
+How do you handle texting?|Reply fast|Wait hours on purpose|Leave them on read|Call instead
+In an argument, you...|Talk it out calmly|Give the silent treatment|Bring up old mistakes|Walk out
+Your ex texts you.|Tell my partner|Reply in secret|Screenshot and keep it|Check their profile 👀
+Your partner gets a big promotion!|Celebrate loudly|Feel jealous quietly|Downplay it|Make it about me
+Splitting the bill on a date?|Split it fairly|Expect them to pay|Keep a score|Hide my spending
+Your partner forgets your birthday.|Gently remind them|Act fine but stay mad|Bring it up for months|Forget theirs on purpose
+Your partner's phone lights up with a message.|Ignore it|Peek quickly|Ask who it is|Scroll through it later
+A friend says something bad about your partner.|Defend them|Listen quietly|Start doubting them|Tell everyone about it
+You made a mistake. You...|Say sorry right away|Make excuses|Blame someone else|Hope nobody notices
+Your partner wants a quiet night alone.|Totally fine|Feel rejected|Show up anyway|Ask what they are hiding
+Someone flirts with you in front of your partner.|Shut it down|Laugh it off|Enjoy the attention|Make my partner jealous
+You catch your partner in a tiny lie.|Talk about it|Say nothing but remember it|Lie back|Make a huge scene
+How do you deal with stress?|Go for a walk|Snap at people|Shut down completely|Overspend on stuff
+Your partner is texting someone you do not know.|Trust them|Ask casually|Interrogate them|Check later
+When you are sad, you...|Talk about it|Hide it|Take it out on others|Pretend to be fine
+Your partner's friend dislikes you.|Try to win them over|Ignore them|Complain about them|Ask my partner to drop them
+When you get jealous, you...|Say it honestly|Keep it inside|Test my partner|Check their socials
+You disagree about plans.|Compromise|Insist on my way|Cancel everything|Go alone and be moody
+Someone cancels plans last minute.|Understand|Say it's fine, but it's not|Get really angry|Cancel on them back
+Your partner shares good news before you do.|Be happy for them|Feel a bit left out|Get annoyed|Pretend I already knew
+You find an old photo of their ex.|Think nothing of it|Feel a pinch of jealousy|Ask them to delete it|Look the ex up
+Your partner picks up your phone.|No problem|Slightly nervous|Snatch it back|I have a passcode just in case
+You owe someone money.|Pay it quickly|Pay it late|Avoid them|Pretend I forgot
+Your partner is a bit sick.|Take care of them|Stay far away|Complain that I'm bored|Make it about me
+You get a rude waiter. You...|Stay polite|Leave a bad review|Make a scene|Walk out
+Someone gives you criticism.|Take it in|Get defensive|Counterattack|Hold a grudge
+You get a compliment.|Say thank you|Brush it off|Fish for more|Wonder what they want
+What do you do when you lose a game?|Congratulate the winner|Sulk|Accuse them of cheating|Never play again
+Your partner is chatty and you are tired.|Listen anyway|Zone out|Tell them to stop|Fake sleep
+You find out a secret about a friend.|Keep it safe|Share with one person|Tell everyone|Use it later
+Someone cuts you off in traffic.|Let it go|Honk once|Yell out the window|Chase them
+How fast do you say "I love you"?|When I truly feel it|Right away|Only after months|I use it to win arguments
+Your partner wants to see their family.|Happy to join|Go along reluctantly|Make excuses|Make them choose me
+How tidy are you?|Pretty tidy|Messy but fine|Chaotic mess|Obsessively clean
+Group chats are...|Fun, I reply soon|Read and forgotten|Muted forever|Left dramatically
+Your partner wants to try something new.|Open to it|Say yes but dread it|Say no immediately|Mock the idea
+You are late and your partner is waiting.|Apologize|Say "almost there" (not true)|Blame them for rushing me|Show up with food
+Leftovers in the fridge are...|Shared|Eaten secretly|Hidden away|Thrown out if they're theirs
+Your partner leaves stuff everywhere.|Clean it up|Complain gently|Leave passive-aggressive notes|Throw it all out
+Your partner is on their phone during dinner.|Let it go|Mention it nicely|Sulk quietly|Take their phone away
+You are proven wrong in a debate.|Admit it|Change the topic|Keep arguing|Never speak of it again
+It is your partner's turn to pick the movie.|Happy to watch it|Complain through it|Scroll on my phone|Pick again anyway
+How do you act when you're hungry?|Normal|A bit grumpy|Very hangry|Dangerous
+You find out about your surprise party.|Act surprised|Be genuinely thrilled|Be annoyed|Leave immediately
+Your friend flirts with your partner.|Talk to both|Stay quiet|Confront my friend|Confront my partner
+You get corrected in front of others.|Say thanks|Feel embarrassed|Roll my eyes|Correct them back
+Your partner makes a joke at your expense.|Laugh|Laugh but feel hurt|Make a bigger joke back|Stay mad for days
+Your phone battery is usually...|Always charged|Always at 5%|Dead by lunch|Never worry about it
+Your partner is moody for no reason.|Ask gently|Give space|Get moody too|Take it personally
+You win something!|Share it|Brag a little|Brag a lot|Hide it
+When it comes to boundaries, I...|Respect them|Test them|Forget them|Ignore them
+At a party where you know nobody, you...|Introduce myself|Stick to my partner|Hide on my phone|Leave early
+Your partner forgets to text goodnight.|Not a big deal|Mention it|Pout|Send an angry message
+Someone steals your fries.|Laugh|Steal back|Complain forever|Never forgive
+Your partner makes new friends.|Excited for them|A little nervous|Suspicious|Ask them to drop them
+Your way of apologizing is...|A real conversation|A cute gift|A text emoji|I never apologize
+You are running low on money.|Make a plan|Borrow some|Hide it from my partner|Spend even more
+Your partner goes out of their way for you.|Show gratitude|Say thanks and forget|Expect it always|Take it for granted
+You run into an ex at a party.|Say hi|Avoid them|Stare at them|Make sure they see me
+A friend borrows money and does not return it.|Remind them nicely|Wait forever|Get furious|Cut them off
+Your partner asks for honest feedback.|Honest and kind|Too honest|Say what they want to hear|Say nothing
+It's the weekend and your partner is tired.|Rest together|Go out alone|Make them come|Sulk at home
+You want something your partner does not.|Talk it through|Sulk|Push until they give in|Do it anyway
+Your partner is late.|Be patient|Be annoyed|Text 10 times|Leave without them
+When I make a promise...|I keep it|I try|I forget it|I never mean it
+Your partner cries.|Hold them|Do not know what to do|Say "calm down"|Leave the room
+You overhear gossip about yourself.|Ignore it|Confront them|Cry later|Plan revenge
+When you're proud of yourself, you...|Share it|Keep it quiet|Brag|Rub it in
+Your partner gives you a gift you do not like.|Smile and thank them|Tell them gently|Make a face|Return it without telling them
+A surprise bill shows up.|Stay calm|Complain|Blame someone|Panic spend
+Your partner's friend texts you privately.|Reply normally|Tell my partner|Hide it|Flirt a bit
+You are stuck in traffic and late.|Breathe and wait|Turn the music up|Beep nonstop|Lose it
+Your partner does not text back for 3 hours.|Assume they're busy|Text again|Spam them|Call everyone they know
+When I am wrong, I...|Own it|Deny it|Make a joke|Get angry
+Your partner wants to move to another city.|Talk about it|Think about it|Refuse|Plan it without telling them
+You do not like their outfit.|Say nothing|Say it kindly|Make a joke|Tell them to change
+Your partner makes a big decision without you.|Support them|Feel left out|Get mad|Make my own decision too
+How do you manage your time?|Always on time|Mostly on time|Always late|Rushed and chaotic
+A stranger is rude to your partner.|Handle it calmly|Stand up for them|Start a fight|Walk away
+Your partner's birthday is coming.|Plan weeks ahead|Plan the night before|Plan nothing|Ask them what to do
+You have a secret.|Keep it|Tell only my partner|Tell my best friend|Post a hint online
+When angry, your texting is...|Calm|Long paragraphs|One-word replies|No reply at all
+When you feel ignored, you...|Say so|Ignore back|Get dramatic|Disappear
+Your friend invites you out, your partner is home.|Invite both|Go alone happily|Go and not tell them|Cancel on my friend
+Someone asks about your relationship.|Share nicely|Keep it private|Overshare|Exaggerate
+You spill a drink on your partner.|Laugh and clean up|Apologize|Blame the table|Walk away
+You disagree in public.|Stay calm|Whisper-argue|Make a scene|Leave
+After a fight, you...|Make up quickly|Wait for them to apologize|Hold a grudge|Need a week
+Your partner does not like your hobby.|Respect it|Compromise|Quit|Hide it
+Your partner is super busy.|Support them|Miss them|Guilt-trip them|Distract them on purpose
+You get a text from an unknown number saying "I miss you".|Ignore|Ask who it is|Reply nicely|Show my partner
+You are asked to keep a secret from your partner.|Say no|Think about it|Keep it|Keep it and enjoy it
+Your partner changes plans suddenly.|Roll with it|Ask why|Get annoyed|Stay home out of spite
+When you play sports together, you are...|Supportive|Competitive|A show-off|Comparing myself to them
+My biggest red flag would be that I...|Overthink|Get too jealous|Am too stubborn|Avoid problems
+Your partner wants to read your messages.|No problem|Feel uneasy|Say absolutely not|Read theirs in return
+Your partner forgets an anniversary.|Forgive quickly|Feel hurt silently|Make them feel guilty|Do the same next time
+You and your partner disagree on money.|Make a budget together|Avoid the topic|Hide purchases|Take control of everything
+`;
+RAW.stranger = `
+Pick your perfect morning:|Sleep in till noon|Early run and coffee|Cozy breakfast in bed|Already at work
+Your dream trip is...|Tropical beach|Snowy cabin|Big city lights|Road trip adventure
+Pick a comfort food:|Pizza|Pasta|Ice cream|Soup
+Best way to spend a Friday night?|Party with friends|Movie marathon|Cooking together|Gaming
+You are most likely to...|Be early to everything|Be late to everything|Forget birthdays|Plan every detail
+Pick a pet:|Dog 🐶|Cat 🐱|Bunny 🐰|No pets, thanks
+Your love language is...|Words|Quality time|Gifts|Touch
+Pick a superpower:|Fly|Read minds|Be invisible|Freeze time
+Favorite season?|Spring 🌸|Summer ☀️|Autumn 🍂|Winter ❄️
+Pick a drink:|Coffee ☕|Tea 🍵|Bubble tea 🧋|Juice 🍊
+Pick a dessert:|Chocolate cake|Cheesecake|Ice cream|Fruit
+Your social battery is...|Always full|Needs recharging|Mostly empty|Depends on the people
+How do you travel?|Plan everything|Plan a little|No plan at all|Let someone else plan
+Pick a movie genre:|Comedy|Romance|Horror|Action
+Best weather?|Sunny and warm|Rainy and cozy|Snowy|Cool and cloudy
+Pick a music vibe:|Pop|Hip hop|Rock|Chill / lo-fi
+How do you relax?|Netflix|Music|Nature walk|Sleep
+Your phone screen time is...|Under 2 hours|Around 4 hours|Over 6 hours|I'm scared to check
+Pick a holiday:|Christmas 🎄|Halloween 🎃|My birthday 🎂|Summer vacation
+How do you eat pizza?|Plain cheese|Lots of toppings|Pineapple 🍍|Crust first
+Pick a snack:|Chips|Candy|Popcorn|Fruit
+How do you spend free money?|Save it|Travel|Clothes|Food
+Your dream home is...|Cozy cabin|Beach house|City apartment|Big mansion
+What do you do on rainy days?|Stay in bed|Watch movies|Bake something|Go splash in puddles
+Pick a breakfast:|Pancakes|Eggs|Cereal|Skip it
+How do you dance?|Like nobody's watching|Only at parties|Only when alone|I don't dance
+Your humor is...|Silly|Sarcastic|Dark|Dad jokes
+Pick a place to live:|Big city|Small town|Countryside|By the sea
+You love getting...|Surprise gifts|Handwritten notes|Quality time|Compliments
+Pick a hobby:|Drawing / art|Sports|Reading|Gaming
+Pick a vacation activity:|Sunbathing|Hiking|Museums|Food tours
+You are happiest when...|I'm outdoors|I'm with friends|I'm alone|I'm eating good food
+Karaoke night: you...|Take the mic first|Sing in a group|Cheer from the side|Run away
+What's your coffee order?|Black coffee|Latte|Iced something|I don't drink coffee
+Pick a sweet treat:|Gummy candy|Chocolate|Cookies|Donuts
+How do you react to spiders?|Not scared|Slightly scared|Scream|Leave the house
+Pick a dinner style:|Fancy restaurant|Street food|Home-cooked|Picnic
+What time do you go to bed?|Before 10|Around midnight|After 2 AM|Whenever I fall asleep
+Your texting style:|Instant replies|Replies after a while|Voice notes|Memes only
+What would you do with a free day?|Sleep|Explore a new place|Meet friends|Do nothing
+Pick a bookstore genre:|Fantasy|Romance|Mystery|Self-help
+Pick a vibe for a night out:|Club|Bar with friends|Quiet cafe|Cozy home night
+What do you wear most?|Hoodies|Dresses / shirts|Sporty clothes|Fancy outfits
+Your cooking skill is...|Chef level|Pretty decent|Can boil water|Delivery expert
+What's your gym style?|Every day|A few times a week|Rarely|Walking counts
+What is your favorite candy flavor?|Sweet|Sour|Chocolate|Fruity
+Pick a pet name for your partner:|Babe|Love|Honey|Something silly
+Pick a transport:|Car|Train|Bike|Plane
+Your friend group is...|One big group|A few close friends|One best friend|I'm a lone wolf
+What's your ideal first date?|Dinner|Coffee walk|Movie|Adventure
+Pick a color:|Pink 🩷|Blue 💙|Green 💚|Black 🖤
+Your sleeping position?|On my side|On my back|On my stomach|Everywhere
+Pick a bedtime activity:|Scroll my phone|Read a book|Watch a show|Think about everything
+How do you handle a rainy commute?|Umbrella|Hoodie|Run|Cancel everything
+What kind of party do you like?|House party|Big club|Small dinner|Surprise party
+Pick a dessert topping:|Chocolate sauce|Caramel|Sprinkles|Whipped cream
+When you are lost you...|Use maps|Ask someone|Wander|Panic
+Pick a fast food:|Burgers|Fries|Chicken|Tacos
+Your shower time is...|Quick|Normal|Very long|Singing included
+Pick a fruit:|Strawberry|Mango|Watermelon|Banana
+Pick a morning drink:|Coffee|Tea|Water|Smoothie
+Your first thought in the morning?|I'm tired|Food|My phone|What day is it?
+What do you do at a concert?|Dance|Sing along|Film everything|Stand still
+Pick a game night:|Board games|Video games|Card games|Truth or dare
+Which would you try?|Skydiving|Scuba diving|Bungee jumping|Nothing scary
+What's your phone wallpaper?|Me or friends|Pet|Nature|Default
+Pick a classic skill:|Singing|Drawing|Dancing|Cooking
+What is your style at work/school?|Organized|Last-minute|Chaotic|Perfectionist
+Pick a Sunday activity:|Brunch|Cleaning|Naps|Family time
+How do you celebrate wins?|Treat myself|Tell everyone|Quiet smile|Party
+What do you collect?|Memories|Plushies|Books|Nothing
+What do you do when bored?|Scroll|Nap|Snack|Clean
+Pick an ice cream flavor:|Vanilla|Chocolate|Strawberry|Something wild
+Pick your transport speed:|Super slow|Normal|Fast|As fast as possible
+Your best quality?|Kind|Funny|Smart|Loyal
+Which smell do you love?|Fresh coffee|Rain|Flowers|Baking
+Pick a place to eat:|Cafe|Restaurant|Food truck|My kitchen
+What do you do with photos?|Post them|Keep them private|Edit forever|Never take any
+What do you pack?|Only essentials|A bit too much|Everything|Last minute chaos
+Where do you shop?|Online|Malls|Thrift stores|I hate shopping
+Which pet name would you pick?|Fluffy|Mochi|Max|Luna
+Pick a lazy day outfit:|Pajamas|Sweatpants|Oversized hoodie|Whatever is clean
+Pick a time of day:|Sunrise|Afternoon|Sunset|Midnight
+What do you do on a long flight?|Sleep|Watch movies|Listen to music|Talk
+Pick a pizza topping:|Pepperoni|Mushrooms|Extra cheese|Veggies
+Pick a travel snack:|Chips|Gummy candy|Fruit|Sandwich
+Pick a rainy day drink:|Hot chocolate|Tea|Coffee|Soup
+What's your weekend vibe?|Adventure|Netflix|Brunch|Sleep
+Pick a school subject:|Math|Art|History|Gym
+What's your dream car?|Sports car|Tiny cute car|Camper van|No car, bike!
+Which show type do you binge?|Comedy|Crime|Fantasy|Reality
+Pick a shopping style:|Plan a list|Browse|Impulse buy|Online only
+Pick a favorite sound:|Rain|Ocean waves|Birds|Music
+How do you decorate?|Plants|Posters|Fairy lights|Minimal
+Pick a spring activity:|Picnic|Flower walk|Cleaning|Bike ride
+How do you take photos?|Lots of selfies|Landscapes|Food|Rarely
+Pick a winter activity:|Skiing|Cocoa and blanket|Ice skating|Hibernating
+How would friends describe you?|Funny|Kind|Wild|Calm
+What's your go-to karaoke song type?|Ballad|Pop hit|Rap|Rock classic
+Pick a new skill:|Cooking|Dancing|Language|Instrument
+`;
+RAW.speed = `
+Coffee or tea?|Coffee ☕|Tea 🍵
+Beach or mountains?|Beach 🏖️|Mountains 🏔️
+Text or call?|Text 💬|Call 📞
+Sweet or salty?|Sweet 🍰|Salty 🍟
+Night owl or early bird?|Night owl 🦉|Early bird 🐦
+Dinner out or cook at home?|Dinner out 🍽️|Cook at home 🍳
+Planner or spontaneous?|Planner 📅|Spontaneous 🎲
+Cuddles or space?|Cuddles 🧸|Space 🌿
+Summer or winter?|Summer ☀️|Winter ❄️
+Movies or series?|Movies 🎬|Series 📺
+Cats or dogs?|Cats 🐱|Dogs 🐶
+Pizza or burgers?|Pizza 🍕|Burgers 🍔
+Early dinner or late dinner?|Early|Late
+Sunrise or sunset?|Sunrise 🌅|Sunset 🌇
+Phone call or voice note?|Call|Voice note
+Hot or cold shower?|Hot 🚿|Cold 🧊
+Book or movie?|Book 📖|Movie 🎞️
+Sneakers or boots?|Sneakers 👟|Boots 🥾
+Rain or snow?|Rain 🌧️|Snow ❄️
+City or countryside?|City 🌆|Countryside 🌾
+Chocolate or vanilla?|Chocolate 🍫|Vanilla 🍦
+Dance or sing?|Dance 💃|Sing 🎤
+Early flight or late flight?|Early ✈️|Late 🌙
+Shower in the morning or at night?|Morning|Night
+Spicy or mild?|Spicy 🌶️|Mild 🥛
+Gift or surprise?|Gift 🎁|Surprise 🎉
+Roller coaster or carousel?|Roller coaster 🎢|Carousel 🎠
+Crowds or quiet?|Crowds|Quiet
+Texting first or waiting?|Text first|Wait
+Sweater or t-shirt?|Sweater|T-shirt
+Early to bed or late to bed?|Early|Late
+Hug or kiss?|Hug 🤗|Kiss 😘
+Pancakes or waffles?|Pancakes 🥞|Waffles 🧇
+Stay in or go out?|Stay in 🏠|Go out 🌃
+Music or silence?|Music 🎧|Silence 🤫
+Sun hat or sunglasses?|Hat 👒|Sunglasses 😎
+Flowers or chocolates?|Flowers 💐|Chocolates 🍫
+Beach or pool?|Beach|Pool
+Camping or hotel?|Camping ⛺|Hotel 🏨
+Tea party or coffee date?|Tea party|Coffee date
+Big party or small gathering?|Big party|Small gathering
+Fries or onion rings?|Fries|Onion rings
+Gym or yoga?|Gym 🏋️|Yoga 🧘
+Selfie or group photo?|Selfie 🤳|Group photo 📸
+Painting or photography?|Painting 🎨|Photography 📷
+Hiking or shopping?|Hiking 🥾|Shopping 🛍️
+Sparkling or still water?|Sparkling|Still
+Mornings or evenings?|Mornings|Evenings
+Heels or flats?|Heels|Flats
+Strawberry or blueberry?|Strawberry 🍓|Blueberry 🫐
+Ice cream or cake?|Ice cream 🍨|Cake 🎂
+Candlelit dinner or picnic?|Candlelit dinner|Picnic
+Cozy blanket or fluffy socks?|Blanket|Socks
+Window seat or aisle?|Window|Aisle
+Big breakfast or just coffee?|Big breakfast|Just coffee
+Pasta or rice?|Pasta 🍝|Rice 🍚
+Sushi or tacos?|Sushi 🍣|Tacos 🌮
+Rom-com or thriller?|Rom-com 💕|Thriller 🔪
+Superhero or villain?|Superhero 🦸|Villain 🦹
+Magic or science?|Magic ✨|Science 🔬
+Trains or planes?|Trains 🚆|Planes 🛫
+Ocean or lake?|Ocean 🌊|Lake 🛶
+Tattoo or piercing?|Tattoo|Piercing
+Cream or sugar?|Cream|Sugar
+Apple or Android?|Apple 🍎|Android 🤖
+Reply fast or reply later?|Fast ⚡|Later 🐢
+Be the chef or the helper?|Chef 👩‍🍳|Helper 🥄
+Sing in the shower or silent shower?|Sing 🎶|Silent
+Wake up with an alarm or naturally?|Alarm ⏰|Naturally
+Leave a party early or stay late?|Early|Late
+Dark mode or light mode?|Dark 🌙|Light ☀️
+Bubble bath or shower?|Bubble bath 🛁|Shower
+Slow song or fast song?|Slow|Fast
+Pick up the bill or split?|Pick up|Split
+Compliment or gift?|Compliment|Gift
+Big wedding or tiny wedding?|Big 💒|Tiny 💍
+Skiing or surfing?|Skiing ⛷️|Surfing 🏄
+Board games or video games?|Board games 🎲|Video games 🎮
+Library or cafe?|Library 📚|Cafe ☕
+Garden or balcony?|Garden 🌷|Balcony 🌆
+Swim in the sea or lake?|Sea|Lake
+Hot chocolate or milkshake?|Hot chocolate|Milkshake
+Perfume or no perfume?|Perfume|No perfume
+Long hair or short hair?|Long|Short
+Black or white?|Black ⚫|White ⚪
+Wine or juice?|Wine 🍷|Juice 🧃
+Messy room or too tidy?|Messy|Too tidy
+Big hugs or small gestures?|Big hugs|Small gestures
+Cinema or home movie night?|Cinema 🍿|Home 🛋️
+Mirror selfie or front camera?|Mirror|Front camera
+Laugh or cry at movies?|Laugh|Cry
+Plants or pets?|Plants 🪴|Pets 🐾
+Funny or romantic?|Funny 😂|Romantic 🌹
+Bike or scooter?|Bike 🚲|Scooter 🛴
+Early adopter or wait and see?|Early adopter|Wait and see
+Sweet text or sweet call?|Sweet text|Sweet call
+Spa day or adventure day?|Spa 🧖|Adventure 🧗
+Fireworks or lanterns?|Fireworks 🎆|Lanterns 🏮
+Forest or desert?|Forest 🌲|Desert 🏜️
+Sunrise hike or sleep-in?|Sunrise hike 🥾|Sleep-in 😴
+`;
+RAW.know = `
+What is my go-to comfort food?|Pizza|Sweets|Pasta|Fast food
+How do I spend a free Sunday?|Sleeping|Going outside|Watching shows|Seeing friends
+What annoys me the most?|Being late|Loud chewing|Slow walkers|Messy rooms
+My dream vacation is...|Beach|City|Nature|Somewhere new each time
+What is my biggest fear?|Heights|Spiders|Being alone|Failing
+How do I show I care?|Cooking for you|Gifts|Listening|Hugs
+What music do I play most?|Pop|Rap|Rock / indie|Chill / lo-fi
+I am happiest when...|It's sunny|I'm with my people|I'm snacking|I'm creating
+What is my favorite season?|Spring|Summer|Autumn|Winter
+My favorite drink is...|Coffee|Tea|Soda|Water
+Which describes my morning?|Early bird|Snooze button|Zombie|Depends on the day
+My ideal date is...|Dinner|Movie night|Adventure|Staying in
+What is my love language?|Words|Quality time|Gifts|Touch
+My go-to snack is...|Chips|Chocolate|Fruit|Popcorn
+What do I do when stressed?|Eat|Sleep|Clean|Talk
+My dream job type?|Creative|Business|Helping people|Outdoors
+I would rather...|Travel|Save money|Buy things|Invest
+I secretly love...|Cheesy movies|Reality TV|Baby animals|Sad songs
+My phone usage is...|Always on it|Moderate|Barely|Only for calls
+My favorite meal is...|Breakfast|Lunch|Dinner|Dessert
+I am best at...|Cooking|Singing|Drawing|Making people laugh
+My favorite holiday is...|Christmas|Halloween|My birthday|Summer break
+I prefer...|Cats|Dogs|Both|Neither
+My go-to outfit is...|Hoodie|Dress / shirt|Sporty|Fancy
+I cry most at...|Movies|Songs|Real life|Never
+My coffee order is...|Black|Latte|Iced|No coffee
+I am most likely to...|Be late|Cancel plans|Surprise people|Forget my keys
+What kind of friend am I?|The funny one|The listener|The planner|The wild one
+My dream pet is...|Dog|Cat|Rabbit|Something exotic
+My favorite weather?|Sunny|Rainy|Snowy|Cloudy
+I hate...|Waiting|Crowds|Cold food|Slow Wi-Fi
+I love...|Surprise gifts|Compliments|Quiet nights|Long walks
+My favorite color family?|Pink|Blue|Green|Black or gray
+I fall asleep...|Quickly|After scrolling|Late|Never easily
+My kind of party is...|Big and loud|Small and cozy|Dinner|No party
+My comfort show is...|Comedy|Romance|Thriller|Cartoon
+What do I order at a restaurant?|The same thing|Something new|What my partner has|Dessert first
+My most used emoji is...|😂|🥺|❤️|🙃
+My favorite part of the day?|Morning|Afternoon|Evening|Night
+I would never...|Skydive|Eat insects|Sing in public|Go camping
+I spend too much on...|Food|Clothes|Games|Gifts
+My texting style is...|Fast replies|Slow replies|Voice notes|Memes
+My go-to dance move is...|The shuffle|Hand waves|Jump around|None
+Which sport would I play?|Football|Tennis|Swimming|Not into sports
+My worst habit is...|Procrastinating|Overthinking|Snacking|Scrolling
+I'm proud of...|My looks|My mind|My kindness|My style
+I would bring to an island...|Phone|Book|Friends|Food
+My skill: I could be a...|Chef|Singer|Pilot|Artist
+I get hangry...|Never|Sometimes|Often|Always
+I'm a person who...|Plans everything|Wings it|Needs reminders|Wants a schedule
+My favorite subject was...|Math|Art|History|Gym
+I'd prefer a home that is...|Cozy|Modern|Big|Small
+When I'm excited, I...|Scream|Dance|Smile quietly|Tell everyone
+I would rather get...|Flowers|Chocolate|Jewelry|A handwritten note
+My idea of fun is...|Going out|Staying in|Traveling|Creating
+I am scared of...|The dark|Deep water|Public speaking|Being forgotten
+My weekend nap is...|Mandatory|Rare|Never|Accidental
+Which drink would I pick at a bar?|Cocktail|Beer|Wine|Soda
+My favorite kind of humor?|Silly|Sarcastic|Dark|Dad jokes
+My spirit animal?|Cat|Dog|Owl|Sloth
+My pet peeve?|Chewing sounds|Bad drivers|Being interrupted|Messy kitchens
+What would I do with a million?|Travel|Buy a house|Invest|Share it
+My favorite scent?|Vanilla|Flowers|Ocean|Coffee
+What I do on rainy days?|Stay in bed|Watch movies|Bake|Go out
+I'm more...|Introvert|Extrovert|Ambivert|Depends
+My favorite candy?|Gummies|Chocolate|Sour|Mints
+I'm usually...|Early|On time|Late|Super late
+I'd like to learn...|A new language|An instrument|Cooking|Coding
+I decorate with...|Plants|Posters|Fairy lights|Nothing
+My phone is usually on...|Silent|Vibrate|Loud|Do not disturb
+The one thing I can't live without?|My phone|Music|Coffee|My people
+I get excited about...|Trips|Food|New things|Seeing friends
+My fashion style?|Cute|Cool|Classy|Comfy
+My coffee shop pick?|Small local|Big chain|Home brewed|None
+My favorite number?|7|3|13|Whatever
+I'd survive a zombie apocalypse by...|Running|Hiding|Fighting|Being the bait
+Which game do I like?|Board games|Video games|Cards|None
+The first thing I notice about people?|Smile|Eyes|Style|Voice
+When I walk into a room, I...|Say hi to everyone|Find a seat|Find food|Check exits
+I most want to travel to...|Japan|Italy|Greece|Iceland
+I am good at keeping...|Secrets|Plants alive|Promises|Time
+My toxic trait?|Overthinking|Procrastination|Being competitive|Ghosting texts
+Which is my favorite pastry?|Croissant|Donut|Cookie|Cinnamon roll
+Which flower fits me?|Rose|Sunflower|Daisy|Lavender
+I want to be remembered as...|Funny|Kind|Brave|Creative
+I cannot stand...|Cold coffee|Warm soda|Dry skin|Wet socks
+The dream life is...|Quiet and slow|Busy and exciting|Rich and fancy|Simple and happy
+My go-to comfort movie is...|Rom-com|Animated|Action|Horror
+I take the longest to...|Get ready|Reply|Decide what to eat|Wake up
+I'd never leave home without...|Phone|Keys|Headphones|Lip balm
+My ideal weekend morning?|Pancakes in bed|A run|Sleeping in|Brunch outside
+The last thing I do at night?|Scroll my phone|Read|Overthink|Watch a show
+When I'm nervous I...|Laugh|Talk too much|Go quiet|Fidget
+I'm better at...|Giving advice|Taking advice|Giving gifts|Receiving gifts
+My phone background is...|A pet|Friends|Nature|Default
+The best gift for me?|Something handmade|Something useful|Something fancy|A surprise trip
+My dream city is...|Paris|Tokyo|New York|Rome
+My texting habit?|Long paragraphs|Short replies|Emojis only|Voice notes
+My cooking skill?|Great|Good enough|Needs help|Delivery only
+My favorite way to unwind?|Music|A hot bath|A walk|A show
+`;
+RAW.wyr = `
+Would you rather...|Always be 10 min late|Always be 20 min early
+Would you rather...|Only eat sweet|Only eat salty
+Would you rather...|Live by the sea|Live in the mountains
+Would you rather...|Talk to animals|Speak every language
+Would you rather...|Travel to the past|Travel to the future
+Would you rather...|Win the lottery|Find true love
+Would you rather...|Never use social media|Never watch a movie again
+Would you rather...|Tiny house, big love|Mansion, quiet life
+Would you rather...|Be famous|Be rich and unknown
+Would you rather...|Have unlimited pizza|Have unlimited ice cream
+Would you rather...|Fly|Be invisible
+Would you rather...|Live without music|Live without movies
+Would you rather...|Always be cold|Always be hot
+Would you rather...|Know when you will die|Know how you will die
+Would you rather...|Have a pet dragon|Have a pet unicorn
+Would you rather...|Be the funniest person|Be the smartest person
+Would you rather...|Cook every day|Do the dishes every day
+Would you rather...|Lose your phone|Lose your wallet
+Would you rather...|Never sleep|Never eat
+Would you rather...|Have a rewind button|Have a pause button
+Would you rather...|Be a bird|Be a fish
+Would you rather...|Live in a treehouse|Live on a boat
+Would you rather...|Travel the world alone|Stay home with your loved one
+Would you rather...|Read minds|See the future
+Would you rather...|Eat a bug|Eat a worm
+Would you rather...|Be able to teleport|Be able to time travel
+Would you rather...|Be a superhero|Be a wizard
+Would you rather...|Have a personal chef|Have a personal driver
+Would you rather...|Only text|Only call
+Would you rather...|Have no internet|Have no TV
+Would you rather...|Go to the moon|Go to the bottom of the ocean
+Would you rather...|Win an Oscar|Win a Nobel Prize
+Would you rather...|Live in a movie|Live in a video game
+Would you rather...|Never be bored|Never be tired
+Would you rather...|Have a long nap|Have a short night of fun
+Would you rather...|Be always lucky|Be always loved
+Would you rather...|Always get the window seat|Always get the aisle seat
+Would you rather...|Have free flights forever|Have free food forever
+Would you rather...|Be the host|Be the guest
+Would you rather...|Be very tall|Be very short
+Would you rather...|Lose all photos|Lose all contacts
+Would you rather...|Have a magic wand|Have a magic mirror
+Would you rather...|Have a big family|Have a few close friends
+Would you rather...|Wear pajamas all day|Wear a fancy outfit all day
+Would you rather...|Have a summer forever|Have a winter forever
+Would you rather...|Ride a roller coaster|Walk through a haunted house
+Would you rather...|Eat only breakfast|Eat only dinner
+Would you rather...|Have your own island|Have your own castle
+Would you rather...|Have a bottomless cup of coffee|Have a bottomless bowl of fries
+Would you rather...|Hug a cactus|Kiss a frog
+Would you rather...|Be a famous singer|Be a famous actor
+Would you rather...|Take a nap|Eat a snack
+Would you rather...|Never get sick|Never be sad
+Would you rather...|Go on a picnic|Go to a concert
+Would you rather...|Wake up early every day|Stay up late every day
+Would you rather...|Have wings|Have gills
+Would you rather...|Have a rooftop view|Have a garden
+Would you rather...|Say everything you think|Never speak again
+Would you rather...|Be stuck in a lift with your crush|Be stuck in a lift with your ex
+Would you rather...|Have a perfect memory|Have perfect intuition
+Would you rather...|Only wear one color|Only wear one outfit
+Would you rather...|Marry your best friend|Marry a stranger you love
+Would you rather...|Know all secrets|Be able to keep any secret
+Would you rather...|Live in the past|Live in the future
+Would you rather...|Have a pet robot|Have a talking cat
+Would you rather...|Give up chocolate|Give up cheese
+Would you rather...|Be a great dancer|Be a great singer
+Would you rather...|Plan the surprise|Be the surprise
+Would you rather...|Win a trip|Win a shopping spree
+Would you rather...|Have summer all year|Have snow all year
+Would you rather...|Know every language|Play every instrument
+Would you rather...|Have breakfast in bed|Have dinner under the stars
+Would you rather...|Always be on time|Always be fashionably late
+Would you rather...|Find a diamond|Find a puppy
+Would you rather...|Never have to work|Never have to study
+Would you rather...|Be a character in a book|Be a character in a movie
+Would you rather...|Time stop whenever you like|Rewind one hour per day
+Would you rather...|Have a rainbow in your room|Have stars on your ceiling
+Would you rather...|Eat the same meal forever|Never eat the same meal twice
+Would you rather...|Dance in the rain|Sing in the snow
+Would you rather...|Have a thousand friends|Have one true friend
+Would you rather...|Own a bookstore|Own a bakery
+Would you rather...|Be able to talk to ghosts|Be able to talk to aliens
+Would you rather...|Have a cinema at home|Have a pool at home
+Would you rather...|Only whisper|Only shout
+Would you rather...|Get a surprise trip|Get a surprise party
+Would you rather...|Sleep in a tent|Sleep in a castle
+Would you rather...|Never forget|Forget at will
+Would you rather...|Have fireworks every night|Have a rainbow every day
+Would you rather...|Have a big dream|Have a perfect day
+Would you rather...|Eat dessert first|Eat dessert last
+Would you rather...|Swim with dolphins|Fly with eagles
+Would you rather...|Watch the sunrise|Watch the sunset
+Would you rather...|Have a private jet|Have a private beach
+Would you rather...|Hold hands forever|Cuddle forever
+Would you rather...|Walk the dog|Pet the cat
+Would you rather...|Never lose your keys|Never miss a bus
+Would you rather...|Have the perfect holiday|Have the perfect home
+Would you rather...|Eat pizza forever|Eat pasta forever
+Would you rather...|Have a pillow fort|Have a treehouse
+`;
+
+
+function parsePool(txt){
+  return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const p = l.split('|'); return { q:p[0], o:p.slice(1) };
+  });
+}
 const GAMES = [
-  { id:'flags', emoji:'🚩', title:'What are my red flags?', desc:'Answers stay secret until you both answer!', mode:'hidden', qs:[
-    {q:'If you get angry, how do you react?', o:['Try to calm down','Scream','Break stuff','Ignore everything']},
-    {q:'You\'re running late for a date. What do you do?', o:['Text them right away','Pretend nothing happened','Blame the traffic','Just don\'t show up']},
-    {q:'Your partner has a night out with friends.', o:['"Have fun!"','Text every 10 minutes','Demand their location','Sulk all night']},
-    {q:'How do you handle texting?', o:['Reply fast','Wait hours on purpose','Leave them on read','Call instead']},
-    {q:'You\'re in an argument. You…', o:['Talk it out calmly','Give the silent treatment','Bring up old mistakes','Walk out']},
-    {q:'Your ex texts you.', o:['Tell my partner','Reply in secret','Screenshot & keep it','Check their profile 👀']},
-    {q:'Your partner gets a big promotion!', o:['Celebrate loudly','Feel jealous quietly','Downplay it','Make it about me']},
-    {q:'Splitting the bill on a date?', o:['Split it fairly','Expect them to pay','Keep a score','Hide my spending']}
-  ]},
-  { id:'stranger', emoji:'🕵️', title:'Get to know the stranger', desc:'Easy questions to break the ice', mode:'instant', qs:[
-    {q:'Pick your perfect morning:', o:['Sleep in till noon','Early run & coffee','Cozy breakfast in bed','Already at work']},
-    {q:'Your dream trip is…', o:['Tropical beach','Snowy cabin','Big city lights','Road trip adventure']},
-    {q:'Pick a comfort food:', o:['Pizza','Pasta','Ice cream','Soup']},
-    {q:'Best way to spend a Friday night?', o:['Party with friends','Movie marathon','Cooking together','Gaming']},
-    {q:'You\'re most likely to…', o:['Be early to everything','Be late to everything','Forget birthdays','Plan every detail']},
-    {q:'Pick a pet:', o:['Dog 🐶','Cat 🐱','Bunny 🐰','No pets, thanks']},
-    {q:'Your love language is…', o:['Words','Quality time','Gifts','Touch']},
-    {q:'Pick a superpower:', o:['Fly','Read minds','Be invisible','Freeze time']}
-  ]},
-  { id:'speed', emoji:'⚡', title:'Speed dating', desc:'Quick this-or-that, go with your gut!', mode:'instant', qs:[
-    {q:'Coffee or tea?', o:['Coffee ☕','Tea 🍵']},
-    {q:'Beach or mountains?', o:['Beach 🏖️','Mountains 🏔️']},
-    {q:'Text or call?', o:['Text 💬','Call 📞']},
-    {q:'Sweet or salty?', o:['Sweet 🍰','Salty 🍟']},
-    {q:'Night owl or early bird?', o:['Night owl 🦉','Early bird 🐦']},
-    {q:'Dinner out or cook at home?', o:['Dinner out 🍽️','Cook at home 🍳']},
-    {q:'Planner or spontaneous?', o:['Planner 📅','Spontaneous 🎲']},
-    {q:'Cuddles or space?', o:['Cuddles 🧸','Space 🌿']},
-    {q:'Summer or winter?', o:['Summer ☀️','Winter ❄️']},
-    {q:'Movies or series?', o:['Movies 🎬','Series 📺']}
-  ]},
-  { id:'know', emoji:'🧠', title:'Do you know me?', desc:'Answer for you, then guess your friend\'s answer', mode:'guess', qs:[
-    {q:'What\'s my go-to comfort food?', o:['Pizza','Sweets','Pasta','Fast food']},
-    {q:'How do I spend a free Sunday?', o:['Sleeping','Going outside','Watching shows','Seeing friends']},
-    {q:'What annoys me the most?', o:['Being late','Loud chewing','Slow walkers','Messy rooms']},
-    {q:'My dream vacation is…', o:['Beach','City','Nature','Somewhere new each time']},
-    {q:'What\'s my biggest fear?', o:['Heights','Spiders','Being alone','Failing']},
-    {q:'How do I show I care?', o:['Cooking for you','Gifts','Listening','Hugs']},
-    {q:'What music do I play most?', o:['Pop','Rap','Rock / indie','Chill / lo-fi']},
-    {q:'I\'m happiest when…', o:['It\'s sunny','I\'m with my people','I\'m snacking','I\'m creating']}
-  ]},
-  { id:'wyr', emoji:'🎈', title:'Would you rather', desc:'Silly choices, see who matches', mode:'instant', qs:[
-    {q:'Would you rather…', o:['Always be 10 min late','Always be 20 min early']},
-    {q:'Would you rather…', o:['Only eat sweet','Only eat salty']},
-    {q:'Would you rather…', o:['Live by the sea','Live in the mountains']},
-    {q:'Would you rather…', o:['Talk to animals','Speak every language']},
-    {q:'Would you rather…', o:['Travel to the past','Travel to the future']},
-    {q:'Would you rather…', o:['Win the lottery','Find true love']},
-    {q:'Would you rather…', o:['Never use social media','Never watch a movie again']},
-    {q:'Would you rather…', o:['Tiny house, big love','Mansion, quiet life']}
-  ]}
+  { id:'flags',    emoji:'🚩', title:'What are my red flags?',   desc:'Answers stay secret until EVERYONE finishes!', mode:'sealed',  pool:parsePool(RAW.flags) },
+  { id:'stranger', emoji:'🕵️', title:'Get to know the stranger', desc:'Easy questions to break the ice',             mode:'instant', pool:parsePool(RAW.stranger) },
+  { id:'speed',    emoji:'⚡', title:'Speed dating',             desc:'Quick this-or-that, go with your gut!',        mode:'instant', pool:parsePool(RAW.speed) },
+  { id:'know',     emoji:'🧠', title:'Do you know me?',          desc:"Answer for you, then guess your friend's answer", mode:'guess', pool:parsePool(RAW.know) },
+  { id:'wyr',      emoji:'🎈', title:'Would you rather',         desc:'Silly choices, see who matches',               mode:'instant', pool:parsePool(RAW.wyr) }
+];
+const COUNTS = [
+  { n:10,  label:'Quick chat',  time:'about 3 min' },
+  { n:30,  label:'Cozy session',time:'about 10 min' },
+  { n:50,  label:'Long hangout',time:'about 15 min' },
+  { n:100, label:'Marathon',    time:'about 30 min' }
 ];
 const GAME = id => GAMES.find(g => g.id === id);
 const AV = {girl:'🐰', boy:'🐻', other:'🦊'};
 const GL = {girl:'Girl 🌸', boy:'Boy 🍀', other:'Other 🌈'};
 const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
+/* same questions, same order for everybody: shuffle with a shared seed */
+function rng(seed){
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const QCACHE = {};
+function qlist(gm, hp){
+  const want = COUNTS.some(c => c.n === hp.qn) ? hp.qn : 10;
+  const n = Math.min(want, gm.pool.length);
+  const sd = Number.isInteger(hp.sd) ? hp.sd : 1;
+  const key = gm.id + '|' + n + '|' + sd;
+  if (QCACHE[key]) return QCACHE[key];
+  const idx = gm.pool.map((_, i) => i), r = rng(sd);
+  for (let i = idx.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  return (QCACHE[key] = idx.slice(0, n).map(i => gm.pool[i]));
+}
+
 /* ---------- helpers ---------- */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const root = document.getElementById('app');
 let S = { screen:'welcome', name:'', gender:'girl', joinCode:'', err:'', busy:false,
-          rt:null, rtChecked:false, room:null, isHost:false, code:'', last:'', copied:false, handledWant:0 };
+          rt:null, rtChecked:false, room:null, isHost:false, code:'', last:'', copied:false, handledWant:0,
+          pickGame:null, asked:'', rv:'all' };
 
 // decorative floating hearts
 (function(){
@@ -229,6 +744,7 @@ function ans(p, key, q, gid){
   const o = p.presence[key]; if (!o || typeof o !== 'object') return undefined;
   const v = o[q]; return (Number.isInteger(v) && v >= 0 && v < 4) ? v : undefined;
 }
+function doneCount(p, gid, n){ let c = 0; while (c < n && ans(p,'a',c,gid) !== undefined) c++; return c; }
 const setP = patch => { if (S.room) S.room.presence(patch).catch(()=>{}); };
 const newGid = () => Math.random().toString(36).slice(2,8);
 
@@ -289,6 +805,7 @@ function roomView(){
     body = `<div class="card center"><div class="big">🥺</div><h2>The host left</h2><p style="color:var(--soft)">This room has ended.</p><button class="btn" data-act="leave">Back to start</button></div>`;
   } else {
     const gm = GAME(host.presence.gm);
+    if (gm){ S.asked = ''; S.pickGame = null; }
     body = gm ? gameView(P, me, host, gm) : menuView(P, me, host);
   }
   return header(P) + body + `<button class="btn ghost" data-act="leave" style="margin-top:8px">Leave room</button>`;
@@ -297,23 +814,41 @@ function roomView(){
 function menuView(P, me, host){
   const alone = P.length < 2;
   const hostName = host.isMe ? 'you' : esc(pname(host));
+
+  /* step 2: how many questions? */
+  const pg = GAME(S.pickGame);
+  if (pg && !alone){
+    return `
+    <button class="btn ghost" data-act="cancelgame" style="margin-bottom:12px">← Back to games</button>
+    <div class="card center">
+      <div class="big">${pg.emoji}</div>
+      <h2>${pg.title}</h2>
+      <p style="color:var(--soft);margin:0 0 16px">How many questions do you want to play?</p>
+      ${COUNTS.map(c => `<button class="count" data-act="count" data-v="${c.n}" ${pg.pool.length < Math.min(c.n, 10) ? 'disabled':''}>
+          <b>${c.n}</b><span><strong style="color:var(--ink)">${c.label}</strong><br>${c.time}</span></button>`).join('')}
+      ${!S.isHost ? `<p class="status" style="padding-bottom:0">${hostName} will start it for everyone ✨</p>` : ''}
+    </div>`;
+  }
+
   return `
   ${alone ? `<div class="card center"><div class="big spin">💌</div><h2>Waiting for friends…</h2>
     <p style="color:var(--soft);margin:0">Send them the code <b>${esc(S.code)}</b> and have them tap “Join room”.</p></div>` : ''}
+  ${S.asked ? `<div class="note">${esc(S.asked)}</div>` : ''}
   <h2 style="margin:6px 4px 12px">${alone ? 'Games' : 'Pick a game 🎮'}</h2>
   ${GAMES.map(g => `<button class="game" data-act="game" data-v="${g.id}" ${alone?'disabled':''}>
-      <div class="ge">${g.emoji}</div><div><b>${g.title}</b><span class="d">${g.desc}</span></div></button>`).join('')}
-  ${(!alone && !S.isHost) ? `<p class="status">Tap a game and ${hostName} will start it ✨</p>` : ''}`;
+      <div class="ge">${g.emoji}</div><div><b>${g.title}</b><span class="d">${g.desc}</span></div></button>`).join('')}`;
 }
 
 function gameView(P, me, host, gm){
-  const gid = host.presence.gid;
-  const q = Number.isInteger(host.presence.q) ? host.presence.q : 0;
-  const len = gm.qs.length;
+  const hp = host.presence, gid = hp.gid;
   if (me.presence.ag !== gid) return `<div class="card center"><div class="big spin">🎲</div><p>Starting ${esc(gm.title)}…</p></div>`;
-  if (q >= len) return resultsView(P, me, host, gm, gid);
+  const qs = qlist(gm, hp), len = qs.length;
+  if (gm.mode === 'sealed') return sealedView(P, me, gm, qs, gid);
 
-  const Q = gm.qs[q];
+  const q = Number.isInteger(hp.q) ? hp.q : 0;
+  if (q >= len) return resultsView(P, me, host, gm, qs, gid);
+
+  const Q = qs[q];
   const guess = gm.mode === 'guess';
   const done = p => ans(p,'a',q,gid) !== undefined && (!guess || ans(p,'g',q,gid) !== undefined);
   const all = P.length > 0 && P.every(done);
@@ -323,8 +858,8 @@ function gameView(P, me, host, gm){
   const idx = P.indexOf(me);
   const target = P[(idx+1) % P.length];
 
-  const dots = `<div class="dots">${gm.qs.map((_,i)=>`<i class="${i<q?'d':(i===q?'c':'')}"></i>`).join('')}</div>`;
-  const head = `${dots}<div class="card"><span class="tag">${gm.emoji} ${esc(gm.title)} · ${q+1}/${len}</span>`;
+  const bar = `<div class="bar"><i style="width:${Math.round(q/len*100)}%"></i></div>`;
+  const head = `${bar}<div class="card"><span class="tag">${gm.emoji} ${esc(gm.title)} · ${q+1}/${len}</span>`;
 
   /* ---- guess mode ---- */
   if (guess){
@@ -346,15 +881,12 @@ function gameView(P, me, host, gm){
     return head + `<p class="q">${esc(Q.q)}</p>${inner}</div>` + nextBtn(me, q, len, all);
   }
 
-  /* ---- hidden + instant modes ---- */
-  const hidden = gm.mode === 'hidden';
-  const showOthers = hidden ? all : (myA !== undefined);
+  /* ---- instant mode: answers show right away, matches get a heart ---- */
   const opts = Q.o.map((o,i) => {
     const pickers = P.filter(p => {
       const a = ans(p,'a',q,gid);
       if (a !== i) return false;
-      if (p.isMe) return true;
-      return showOthers;
+      return p.isMe || myA !== undefined;
     });
     const mine = myA === i;
     return `<button class="opt ${mine?'mine':''} ${myA!==undefined?'locked':''}" data-act="pick" data-i="${i}">
@@ -366,14 +898,63 @@ function gameView(P, me, host, gm){
   if (all){
     const vals = P.map(p => ans(p,'a',q,gid));
     const same = vals.every(v => v === vals[0]) && P.length > 1;
-    if (hidden) banner = same ? `<div class="match">Same flag! 🚩🚩</div>` : `<div class="nomatch">Different flags… interesting 👀</div>`;
-    else banner = same ? `<div class="match">Matching ♥</div>` : `<div class="nomatch">Not this time 🙈</div>`;
+    banner = same ? `<div class="match">Matching ♥</div>` : `<div class="nomatch">Not this time 🙈</div>`;
   } else if (myA !== undefined){
-    banner = `<div class="status">${hidden ? 'Locked in 🔒 Answers stay secret until everyone’s in.<br>' : ''}Waiting for ${pending.map(p=>esc(pname(p))).join(', ')}…</div>`;
+    banner = `<div class="status">Waiting for ${pending.map(p=>esc(pname(p))).join(', ')}…</div>`;
   } else {
-    banner = `<div class="status">${hidden ? 'Your answer stays secret until everyone answers 🤫' : 'Pick one!'}</div>`;
+    banner = `<div class="status">Pick one!</div>`;
   }
   return head + `<p class="q">${esc(Q.q)}</p>${opts}${banner}</div>` + nextBtn(me, q, len, all);
+}
+
+/* ---- red flags: everyone answers ALL questions first, nothing is visible until everyone is done ---- */
+function sealedView(P, me, gm, qs, gid){
+  const n = qs.length;
+  const counts = P.map(p => doneCount(p, gid, n));
+  const mine = counts[P.indexOf(me)];
+  const everyoneDone = P.length > 1 && counts.every(c => c >= n);
+  if (everyoneDone) return sealedResults(P, gm, qs, gid);
+
+  const progress = P.map((p,i) => `<div class="prog">${pchip(p,true)}<div class="bar sm"><i style="width:${Math.round(counts[i]/n*100)}%"></i></div><span>${counts[i]}/${n}</span></div>`).join('');
+
+  if (mine >= n){
+    return `<div class="card center"><div class="big spin">🔒</div><h2>You answered everything!</h2>
+      <p style="color:var(--soft)">Your answers are locked. Everyone's answers show up together once <b>all</b> players have finished.</p>
+      <div style="text-align:left;margin-top:14px">${progress}</div></div>`;
+  }
+  const Q = qs[mine];
+  return `<div class="bar"><i style="width:${Math.round(mine/n*100)}%"></i></div>
+    <div class="card"><span class="tag">${gm.emoji} ${esc(gm.title)} · ${mine+1}/${n}</span>
+    <p class="q">${esc(Q.q)}</p>
+    ${Q.o.map((o,i) => `<button class="opt" data-act="pick" data-i="${i}"><span class="n">${i+1}</span>${esc(o)}</button>`).join('')}
+    <div class="status" style="padding-bottom:4px">🤫 All answers stay secret until everyone has finished all ${n} questions</div>
+    ${P.length > 1 ? `<div style="margin-top:6px">${progress}</div>` : ''}</div>`;
+}
+
+function sealedResults(P, gm, qs, gid){
+  const n = qs.length; let m = 0; const items = [];
+  for (let k=0;k<n;k++){
+    const vals = P.map(p => ans(p,'a',k,gid));
+    const same = vals.every(v => v !== undefined && v === vals[0]);
+    if (same) m++;
+    items.push({ k, same });
+  }
+  const msg = m >= n*0.7 ? 'Wow, you two are in sync! 🥰' : m >= n*0.4 ? 'Cute! You share lots of flags ✨' : 'Opposites attract, right? 😄';
+  const shown = items.filter(it => S.rv === 'all' || !it.same);
+  const foot = S.isHost
+    ? `<button class="btn" data-act="menu">Pick another game 🎮</button>`
+    : `<p class="status">The host can pick the next game 🎮</p>`;
+  return `<div class="card center"><span class="tag">${gm.emoji} ${esc(gm.title)}</span>
+      <div class="big">${m>=n*0.5?'🥰':'😊'}</div>
+      <h2>All answers are in! 🎉</h2>
+      <p style="margin:0 0 6px"><b>${m}/${n}</b> same flags</p>
+      <p style="color:var(--soft);margin:0">${msg}</p></div>
+    ${foot}
+    <div class="seg"><button class="${S.rv==='all'?'on':''}" data-act="rv" data-v="all">Everything</button><button class="${S.rv==='diff'?'on':''}" data-act="rv" data-v="diff">Only differences</button></div>
+    ${shown.map(({k,same}) => { const Q = qs[k];
+      return `<div class="rv ${same?'same':''}"><div class="rq"><span class="rn">${k+1}</span>${esc(Q.q)} ${same?'💗':''}</div>
+        ${P.map(p => `<div class="ra">${pchip(p,true)} <span>${esc(Q.o[ans(p,'a',k,gid)])}</span></div>`).join('')}</div>`; }).join('')}
+    ${shown.length === 0 ? '<p class="status">You matched on every single one! 💞</p>' : ''}`;
 }
 
 function nextBtn(me, q, len, all){
@@ -382,8 +963,8 @@ function nextBtn(me, q, len, all){
   return `<button class="btn" data-act="next" ${ready?'disabled':''}>${ready ? 'Waiting for the others 💭' : (q+1>=len ? 'See results ✨' : 'Next question →')}</button>`;
 }
 
-function resultsView(P, me, host, gm, gid){
-  const len = gm.qs.length;
+function resultsView(P, me, host, gm, qs, gid){
+  const len = qs.length;
   let inner = '';
   if (gm.mode === 'guess'){
     inner = P.map((p,i) => {
@@ -398,9 +979,8 @@ function resultsView(P, me, host, gm, gid){
       const same = P.length>1 && vals.every(v => v!==undefined && v===vals[0]);
       if (same) m++; row.push(same ? '💗' : '🤍');
     }
-    const label = gm.mode==='hidden' ? 'same flags' : 'matches';
     const msg = m >= len*0.7 ? 'Wow, you two are in sync! 🥰' : m >= len*0.4 ? 'Cute! You vibe in lots of ways ✨' : 'Opposites attract, right? 😄';
-    inner = `<div class="big">${m>=len*0.5?'🥰':'😊'}</div><h2 class="center">${m}/${len} ${label}</h2><div class="hearts">${row.join('')}</div><p class="center" style="color:var(--soft)">${msg}</p>`;
+    inner = `<div class="big">${m>=len*0.5?'🥰':'😊'}</div><h2 class="center">${m}/${len} matches</h2>${len<=30?`<div class="hearts">${row.join('')}</div>`:''}<p class="center" style="color:var(--soft)">${msg}</p>`;
   }
   const foot = S.isHost
     ? `<button class="btn" data-act="menu">Pick another game 🎮</button>`
@@ -432,8 +1012,12 @@ function logic(){
   if (S.isHost){
     if (!gm){
       const asker = P.find(p => !p.isMe && p.presence.w && GAME(p.presence.w.id) && Number(p.presence.w.t) > S.handledWant);
-      if (asker && P.length > 1){ S.handledWant = Number(asker.presence.w.t); startGame(asker.presence.w.id); }
-    } else if (Number.isInteger(hp.q) && hp.q < gm.qs.length){
+      if (asker && P.length > 1){
+        S.handledWant = Number(asker.presence.w.t);
+        const n = COUNTS.some(c => c.n === asker.presence.w.n) ? asker.presence.w.n : 10;
+        startGame(asker.presence.w.id, n);
+      }
+    } else if (gm.mode !== 'sealed' && Number.isInteger(hp.q) && hp.q < qlist(gm, hp).length){
       const q = hp.q;
       const allReady = P.every(p => p.presence.ag === hp.gid && Number.isInteger(p.presence.rd) && p.presence.rd >= q+1);
       if (allReady) setP({ q: q+1 });
@@ -443,9 +1027,9 @@ function logic(){
     else if (gm && me.presence.w) setP({ w:null });
   }
 }
-function startGame(id){
+function startGame(id, n){
   const gid = newGid();
-  setP({ gm:id, q:0, gid, ag:gid, a:{}, g:{}, rd:0 });
+  setP({ gm:id, qn:n, sd:Math.floor(Math.random()*2147483646)+1, q:0, gid, ag:gid, a:{}, g:{}, rd:0 });
 }
 function update(){ render(); logic(); }
 
@@ -500,15 +1084,24 @@ async function act(name, d){
     update(); setTimeout(() => { S.copied = false; update(); }, 1800); return;
   }
   if (name === 'leave'){
-    const r = S.room; S.room = null; S.screen = 'lobby'; S.isHost = false; S.code = ''; S.err = '';
+    const r = S.room; S.room = null; S.screen = 'lobby'; S.isHost = false; S.code = ''; S.err = ''; S.pickGame = null; S.asked = '';
     if (r) { try { await r.leave(); } catch(e){} }
     return update();
   }
-  if (name === 'game'){
-    if (S.isHost) startGame(d.v); else setP({ w:{ id:d.v, t:Date.now() } });
-    return;
+  if (name === 'game'){ S.pickGame = d.v; return update(); }
+  if (name === 'cancelgame'){ S.pickGame = null; return update(); }
+  if (name === 'count'){
+    const n = Number(d.v), id = S.pickGame;
+    if (!GAME(id) || !COUNTS.some(c => c.n === n)) return;
+    if (S.isHost) startGame(id, n);
+    else {
+      setP({ w:{ id, n, t:Date.now() } });
+      S.asked = 'Asked the host to start “' + GAME(id).title + '” with ' + n + ' questions ✨';
+    }
+    S.pickGame = null; return update();
   }
-  if (name === 'menu'){ setP({ gm:null, q:null, gid:null }); return; }
+  if (name === 'rv'){ S.rv = d.v === 'diff' ? 'diff' : 'all'; return update(); }
+  if (name === 'menu'){ setP({ gm:null, q:null, gid:null, qn:null, sd:null }); return; }
   if (name === 'next'){
     const P = players(); const me = P.find(p=>p.isMe&&p.sameTab); const host = P.find(p=>p.presence.r==='h');
     if (me && host && Number.isInteger(host.presence.q)) setP({ rd: host.presence.q + 1 });
@@ -518,8 +1111,17 @@ async function act(name, d){
     const P = players(); const me = P.find(p=>p.isMe&&p.sameTab); const host = P.find(p=>p.presence.r==='h');
     if (!me || !host) return;
     const gm = GAME(host.presence.gm); if (!gm) return;
-    const gid = host.presence.gid, q = host.presence.q, i = Number(d.i);
-    if (me.presence.ag !== gid || !Number.isInteger(q) || q >= gm.qs.length) return;
+    const gid = host.presence.gid, i = Number(d.i);
+    if (me.presence.ag !== gid) return;
+    const qs = qlist(gm, host.presence), n = qs.length;
+    if (gm.mode === 'sealed'){
+      const q = doneCount(me, gid, n);
+      if (q >= n || !(i >= 0 && i < qs[q].o.length)) return;
+      setP({ a: Object.assign({}, me.presence.a || {}, { [q]: i }) });
+      return;
+    }
+    const q = host.presence.q;
+    if (!Number.isInteger(q) || q >= n || !(i >= 0 && i < qs[q].o.length)) return;
     const myA = ans(me,'a',q,gid), myG = ans(me,'g',q,gid);
     if (myA === undefined){
       setP({ a: Object.assign({}, me.presence.a || {}, { [q]: i }) });
@@ -577,9 +1179,8 @@ function makeNet(){
           else { if (conn && conn.open) conn.send({ t:'p', patch }); fire(); }
           return Promise.resolve();
         },
-        leave(){ closedByMe = true; try { peer && peer.destroy(); } catch(e){} handlers.clear(); return Promise.resolve(); }
+        leave(){ try { peer && peer.destroy(); } catch(e){} handlers.clear(); return Promise.resolve(); }
       };
-      let closedByMe = false;
       const id = PREFIX + code.toLowerCase();
 
       if (isHost){
@@ -590,7 +1191,7 @@ function makeNet(){
           conns.set(c.peer, c);
           c.on('data', m => {
             if (!m || m.t !== 'p' || !m.patch || typeof m.patch !== 'object') return;
-            if (JSON.stringify(m.patch).length > 4000) return;
+            if (JSON.stringify(m.patch).length > 6000) return;
             const cur = Object.assign({}, pres.get(c.peer) || {});
             applyPatch(cur, m.patch);
             cur.r = 'g';                       // only the creator can be host
@@ -619,8 +1220,8 @@ function makeNet(){
 }
 
 /* ---------- boot ---------- */
-render();
-S.rt = makeNet();
+try { render(); } catch(e){ root.innerHTML = '<p style="padding:20px">Something went wrong: ' + esc(e.message) + '</p>'; }
+try { S.rt = makeNet(); } catch(e){ S.rt = null; }
 S.rtChecked = true;
 update();
 </script>
